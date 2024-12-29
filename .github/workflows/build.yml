@@ -20,29 +20,26 @@ jobs:
         # Function to determine system architecture
         get_arch() {
           case "$(uname -m)" in
+            'x86_64')    echo "amd64"  ;;
+            'x86' | 'i686' | 'i386')  echo "386"    ;;
             'aarch64' | 'arm64')      echo "arm64"  ;;
             'armv7l')    echo "armv7" ;;
             's390x')     echo "s390x" ;;
-            'x86' | 'i686' | 'i386')  echo "386"    ;;
-            'x86_64')    echo "amd64"  ;;
             *)           echo "Unsupported architecture: $(uname -m)" >&2; return 1 ;;
           esac
         }
 
         # Function to install a package
         install_package() {
+          local repo=$1
+          local binary=$2
           local arch
-          local binary=$1
-          local filename
-          local repo=$2
-          local url
-          local version
-
           arch=$(get_arch) || exit 1
 
           echo "Installing $binary..."
           
           # Get latest version
+          local version
           version=$(curl -sSL "https://api.github.com/repos/$repo/releases/latest" | 
                     jq -r '.tag_name' | 
                     sed 's/^v//')
@@ -53,17 +50,18 @@ jobs:
           fi
 
           # Construct filename based on binary
-          if [ "$binary" = "mihomo" ]; then
-            filename="${binary}-linux-${arch}-v${version}.deb"
-          elif [ "$binary" = "sing-box" ]; then
+          local filename
+          if [ "$binary" = "sing-box" ]; then
             filename="${binary}_${version}_linux_${arch}.deb"
+          elif [ "$binary" = "mihomo" ]; then
+            filename="${binary}-linux-${arch}-v${version}.deb"
           else
             echo "Unknown binary: $binary" >&2
             return 1
           fi
 
           # Download package
-          url="https://github.com/$repo/releases/download/v${version}/${filename}"
+          local url="https://github.com/$repo/releases/download/v${version}/${filename}"
           if ! curl -sSLo "${binary}.deb" "$url"; then
             echo "Failed to download $binary" >&2
             return 1
@@ -83,31 +81,44 @@ jobs:
           echo "$binary installed successfully"
         }
 
-        # Install mihomo and sing-box
+        # Install sing-box
         MAX_RETRIES=3
-        for binary in mihomo sing-box; do
-          RETRY_COUNT=0
-          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            if install_package "$binary" "${binary#mihomo}${binary#sing-box}MetaCubeX/mihomoSagerNet/sing-box"; then
-              break
-            else
-              RETRY_COUNT=$((RETRY_COUNT+1))
-              echo "Retry $RETRY_COUNT of $MAX_RETRIES for $binary installation"
-              sleep 5
-            fi
-          done
-
-          if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
-            echo "Failed to install $binary after $MAX_RETRIES attempts" >&2
-            exit 1
+        RETRY_COUNT=0
+        while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+          if install_package "SagerNet/sing-box" "sing-box"; then
+            break
+          else
+            RETRY_COUNT=$((RETRY_COUNT+1))
+            echo "Retry $RETRY_COUNT of $MAX_RETRIES for sing-box installation"
+            sleep 5
           fi
         done
 
-        # Debug: Check installed versions
-        for binary in sing-box; do
-          echo "DEBUG: $binary version"
-          $binary version
+        if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+          echo "Failed to install sing-box after $MAX_RETRIES attempts" >&2
+          exit 1
+        fi
+
+        # Install mihomo
+        RETRY_COUNT=0
+        while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+          if install_package "MetaCubeX/mihomo" "mihomo"; then
+            break
+          else
+            RETRY_COUNT=$((RETRY_COUNT+1))
+            echo "Retry $RETRY_COUNT of $MAX_RETRIES for mihomo installation"
+            sleep 5
+          fi
         done
+
+        if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+          echo "Failed to install mihomo after $MAX_RETRIES attempts" >&2
+          exit 1
+        fi
+
+        # Debug: Check installed versions
+        echo "DEBUG: sing-box version"
+        sing-box version
 
     - name: Generate CDN lists
       run: |
