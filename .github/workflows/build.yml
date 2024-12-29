@@ -1,0 +1,298 @@
+name: Update Geo Lists and Generate CDN List
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Run daily at 00:00 UTC
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  update-lists:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0  # Fetch all history for all branches and tags
+
+    - name: Install sing-box and mihomo
+      run: |
+        # Function to determine system architecture
+        get_arch() {
+          case "$(uname -m)" in
+            'aarch64' | 'arm64')      echo "arm64"  ;;
+            'armv7l')    echo "armv7" ;;
+            's390x')     echo "s390x" ;;
+            'x86' | 'i686' | 'i386')  echo "386"    ;;
+            'x86_64')    echo "amd64"  ;;
+            *)           echo "Unsupported architecture: $(uname -m)" >&2; return 1 ;;
+          esac
+        }
+
+        # Function to install a package
+        install_package() {
+          local arch
+          local binary=$1
+          local filename
+          local repo=$2
+          local url
+          local version
+
+          arch=$(get_arch) || exit 1
+
+          echo "Installing $binary..."
+          
+          # Get latest version
+          version=$(curl -sSL "https://api.github.com/repos/$repo/releases/latest" | 
+                    jq -r '.tag_name' | 
+                    sed 's/^v//')
+          
+          if [ -z "$version" ]; then
+            echo "Failed to get latest version for $binary" >&2
+            return 1
+          fi
+
+          # Construct filename based on binary
+          if [ "$binary" = "mihomo" ]; then
+            filename="${binary}-linux-${arch}-v${version}.deb"
+          elif [ "$binary" = "sing-box" ]; then
+            filename="${binary}_${version}_linux_${arch}.deb"
+          else
+            echo "Unknown binary: $binary" >&2
+            return 1
+          fi
+
+          # Download package
+          url="https://github.com/$repo/releases/download/v${version}/${filename}"
+          if ! curl -sSLo "${binary}.deb" "$url"; then
+            echo "Failed to download $binary" >&2
+            return 1
+          fi
+
+          # Install package
+          if ! sudo dpkg -i "${binary}.deb"; then
+            echo "Failed to install $binary" >&2
+            sudo apt-get -f install -y  # Try to fix broken dependencies
+            if ! sudo dpkg -i "${binary}.deb"; then
+              echo "Failed to install $binary even after fixing dependencies" >&2
+              return 1
+            fi
+          fi
+
+          rm "${binary}.deb"
+          echo "$binary installed successfully"
+        }
+
+        # Install mihomo and sing-box
+        MAX_RETRIES=3
+        for binary in mihomo sing-box; do
+          RETRY_COUNT=0
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if install_package "$binary" "${binary#mihomo}${binary#sing-box}MetaCubeX/mihomoSagerNet/sing-box"; then
+              break
+            else
+              RETRY_COUNT=$((RETRY_COUNT+1))
+              echo "Retry $RETRY_COUNT of $MAX_RETRIES for $binary installation"
+              sleep 5
+            fi
+          done
+
+          if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+            echo "Failed to install $binary after $MAX_RETRIES attempts" >&2
+            exit 1
+          fi
+        done
+
+        # Debug: Check installed versions
+        for binary in mihomo sing-box; do
+          echo "DEBUG: $binary version"
+          $binary version
+        done
+
+    - name: Generate CDN lists
+      run: |
+        # Constants
+        URL="https://ruleset.skk.moe/sing-box/domainset/cdn.json"
+        RULE_SET_DIR="rule-set"
+        JSON_OUTPUT="${RULE_SET_DIR}/geosite-cdn.json"
+        LIST_OUTPUT="${RULE_SET_DIR}/geosite-cdn.list"
+        MRS_OUTPUT="${RULE_SET_DIR}/geosite-cdn.mrs"
+        SRS_OUTPUT="${RULE_SET_DIR}/geosite-cdn.srs"
+        TXT_OUTPUT="${RULE_SET_DIR}/geosite-cdn.txt"
+        YAML_OUTPUT="${RULE_SET_DIR}/geosite-cdn.yaml"
+
+        # Create rule-set directory if it doesn't exist
+        mkdir -p "$RULE_SET_DIR"
+
+        # Function to log messages
+        log() {
+          echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
+        }
+
+        # Function to download, process, and sort JSON
+        process_json() {
+          log "Downloading, processing, and sorting JSON..."
+          if curl -sSL "$URL" | jq '
+            .version = 1 |
+            .rules = [
+              {
+                domain: (
+                  [.rules[].domain[] | select(. != "this_ruleset_is_made_by_sukkaw.ruleset.skk.moe")] | sort
+                ),
+                domain_suffix: (
+                  [.rules[].domain_suffix[] | select(. != "this_ruleset_is_made_by_sukkaw.ruleset.skk.moe")] | sort
+                )
+              }
+            ]
+          ' > "$JSON_OUTPUT"; then
+            log "JSON file generated with sorted content."
+          else
+            log "Error: Failed to process or sort JSON" >&2
+            return 1
+          fi
+        }
+
+        # Function to generate TXT file (domain only)
+        generate_txt() {
+          log "Generating TXT file (domain only)..."
+          if jq -r '
+            .rules[].domain[]?,
+            (.rules[].domain_suffix[] | "+.\(.)")
+          ' "$JSON_OUTPUT" > "$TXT_OUTPUT"; then
+            log "TXT file generated."
+          else
+            log "Error: Failed to generate TXT file" >&2
+            return 1
+          fi
+        }
+
+        # Function to generate LIST file
+        generate_list() {
+          log "Generating LIST file..."
+          if jq -r '
+            (.rules[].domain[] | "DOMAIN,\(.)")
+            , (.rules[].domain_suffix[] | "DOMAIN-SUFFIX,\(.)")
+          ' "$JSON_OUTPUT" > "$LIST_OUTPUT"; then
+            log "LIST file generated."
+          else
+            log "Error: Failed to generate LIST file" >&2
+            return 1
+          fi
+        }
+
+        # Function to generate YAML file for mihomo
+        generate_yaml() {
+          log "Generating YAML file for mihomo..."
+          {
+            echo "payload:"
+            jq -r '
+              (.rules[].domain[] | "  - '\''\(.)'\''" )
+              , (.rules[].domain_suffix[] | "  - '\''+.\(.)'\''" )
+            ' "$JSON_OUTPUT"
+          } > "$YAML_OUTPUT"
+          if [ $? -eq 0 ]; then
+            log "YAML file generated."
+          else
+            log "Error: Failed to generate YAML file" >&2
+            return 1
+          fi
+        }
+
+        # Function to convert JSON to SRS
+        convert_to_srs() {
+          log "Converting JSON to SRS format..."
+          if sing-box rule-set compile "$JSON_OUTPUT" -o "$SRS_OUTPUT"; then
+            log "SRS file generated."
+          else
+            log "Error: Failed to generate SRS file" >&2
+            return 1
+          fi
+        }
+
+        # Function to convert YAML to MRS
+        convert_to_mrs() {
+          log "Converting YAML to MRS format..."
+          if mihomo convert-ruleset domain yaml "$YAML_OUTPUT" "$MRS_OUTPUT"; then
+            log "MRS file generated."
+          else
+            log "Error: Failed to generate MRS file" >&2
+            return 1
+          fi
+        }
+
+        # Main execution
+        main() {
+          process_json || exit 1
+          generate_txt || exit 1
+          generate_list || exit 1
+          generate_yaml || exit 1
+          convert_to_srs || exit 1
+          convert_to_mrs || exit 1
+          log "All operations completed successfully."
+        }
+
+        # Run the script
+        main
+
+        # Debug: List contents of rule-set directory
+        echo "DEBUG: Listing contents of rule-set directory after CDN list generation"
+        ls -la "$RULE_SET_DIR"
+
+    - name: Download Geo lists
+      run: |
+        # Function to download files
+        download_files() {
+          local base_url=$1
+          local extensions=("json" "list" "mrs" "srs" "txt" "yaml")
+          local file_base=$2
+          local output_dir=$3
+
+          mkdir -p "$output_dir"
+
+          for ext in "${extensions[@]}"; do
+            local output_file="${output_dir}/${file_base}.${ext}"
+            local url="${base_url}${file_base}.${ext}"
+            echo "Downloading ${url}..."
+            if curl -sSL -o "$output_file" "$url"; then
+              echo "Successfully downloaded ${output_file}"
+            else
+              echo "Failed to download ${url}"
+            fi
+          done
+        }
+
+        # Base URLs
+        GEOIP_BASE_URL="https://raw.githubusercontent.com/caocaocc/geoip/rule-set/"
+        GEOSITE_BASE_URL="https://raw.githubusercontent.com/caocaocc/geosite/rule-set/"
+
+        # Geosite files to download
+        GEOSITE_FILES=(
+          "geosite-category-remote-control"
+          "geosite-cn"
+          "geosite-geolocation-!cn"
+          "geosite-netflix"
+          "geosite-openai"
+          "geosite-paypal"
+          "geosite-private"
+        )
+
+        # Download Geosite files
+        for file in "${GEOSITE_FILES[@]}"; do
+          download_files "$GEOSITE_BASE_URL" "$file" "rule-set"
+        done
+
+        # Download GeoIP files
+        download_files "$GEOIP_BASE_URL" "geoip-cn" "rule-set"
+
+        # Debug: List contents of rule-set directory
+        echo "DEBUG: Listing contents of rule-set directory after downloading Geo lists"
+        ls -la "rule-set"
+
+    - name: Deploy GitHub Pages
+      if: success()
+      uses: crazy-max/ghaction-github-pages@v3
+      with:
+        build_dir: rule-set
+        target_branch: rule-set
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
