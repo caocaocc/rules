@@ -104,7 +104,7 @@ jobs:
         done
 
         # Debug: Check installed versions
-        for binary in mihomo sing-box; do
+        for binary in sing-box; do
           echo "DEBUG: $binary version"
           $binary version
         done
