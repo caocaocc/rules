@@ -112,20 +112,22 @@ def write_yaml(ipv4_cidrs: List[str], ipv6_cidrs: List[str], filename: str) -> N
 def convert_files() -> None:
     """Convert JSON files to SRS and YAML files to MRS."""
     for json_file in glob.glob('rule-set/**/*.json', recursive=True):
-        srs_file = json_file.rsplit('.', 1)[0] + '.srs'
-        try:
-            subprocess.run(f"sing-box rule-set compile {json_file} -o {srs_file}", shell=True, check=True)
-            print(f"Converted {json_file} to {srs_file}")
-        except subprocess.CalledProcessError as e:
-            print(f"Error converting {json_file} to SRS: {e}")
+        if 'geoip' in json_file:
+            srs_file = json_file.rsplit('.', 1)[0] + '.srs'
+            try:
+                subprocess.run(f"sing-box rule-set compile {json_file} -o {srs_file}", shell=True, check=True)
+                print(f"Converted {json_file} to {srs_file}")
+            except subprocess.CalledProcessError as e:
+                print(f"Error converting {json_file} to SRS: {e}")
 
     for yaml_file in glob.glob('rule-set/**/*.yaml', recursive=True):
-        mrs_file = yaml_file.rsplit('.', 1)[0] + '.mrs'
-        try:
-            subprocess.run(f"mihomo convert-ruleset ipcidr yaml {yaml_file} {mrs_file}", shell=True, check=True)
-            print(f"Converted {yaml_file} to {mrs_file}")
-        except subprocess.CalledProcessError as e:
-            print(f"Error converting {yaml_file} to MRS: {e}")
+        if 'geoip' in json_file:
+            mrs_file = yaml_file.rsplit('.', 1)[0] + '.mrs'
+            try:
+                subprocess.run(f"mihomo convert-ruleset ipcidr yaml {yaml_file} {mrs_file}", shell=True, check=True)
+                print(f"Converted {yaml_file} to {mrs_file}")
+            except subprocess.CalledProcessError as e:
+                print(f"Error converting {yaml_file} to MRS: {e}")
 
 def process_urls(config: Dict[str, List[str]]) -> None:
     """Process URLs and generate output files."""
