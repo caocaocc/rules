@@ -107,21 +107,23 @@ def write_yaml(domains: List[str], domain_suffixes: List[str], filename: str) ->
 
 def convert_json_to_srs(json_file: str) -> None:
     """Convert JSON file to SRS format."""
-    output_file = json_file.replace('.json', '.srs')
-    try:
-        subprocess.run(['sing-box', 'rule-set', 'compile', json_file, '-o', output_file], check=True)
-        print(f"Successfully converted {json_file} to {output_file}")
-    except subprocess.CalledProcessError as e:
-        print(f"Error converting {json_file} to SRS: {e}")
+    if 'geosite' in json_file:
+        output_file = json_file.replace('.json', '.srs')
+        try:
+            subprocess.run(['sing-box', 'rule-set', 'compile', json_file, '-o', output_file], check=True)
+            print(f"Successfully converted {json_file} to {output_file}")
+        except subprocess.CalledProcessError as e:
+            print(f"Error converting {json_file} to SRS: {e}")
 
 def convert_yaml_to_mrs(yaml_file: str) -> None:
     """Convert YAML file to MRS format."""
-    output_file = yaml_file.replace('.yaml', '.mrs')
-    try:
-        subprocess.run(['mihomo', 'convert-ruleset', 'domain', 'yaml', yaml_file, output_file], check=True)
-        print(f"Successfully converted {yaml_file} to {output_file}")
-    except subprocess.CalledProcessError as e:
-        print(f"Error converting {yaml_file} to MRS: {e}")
+    if 'geosite' in json_file:
+        output_file = yaml_file.replace('.yaml', '.mrs')
+        try:
+            subprocess.run(['mihomo', 'convert-ruleset', 'domain', 'yaml', yaml_file, output_file], check=True)
+            print(f"Successfully converted {yaml_file} to {output_file}")
+        except subprocess.CalledProcessError as e:
+            print(f"Error converting {yaml_file} to MRS: {e}")
         
 def process_urls(config: Dict[str, List[str]]) -> None:
     """Process URLs and generate output files."""
