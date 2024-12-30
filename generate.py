@@ -220,7 +220,6 @@ def main():
             "base_filename": "geosite-cdn",
             "type": "domain"
         },
-        可以轻松添加新的配置，例如：
         {
             "urls": ["https://core.telegram.org/resources/cidr.txt"],
             "base_filename": "geoip-telegram",
