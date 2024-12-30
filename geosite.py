@@ -95,6 +95,22 @@ def write_yaml(domains: List[str], domain_suffixes: List[str], filename: str) ->
         for suffix in domain_suffixes:
             f.write(f"  - '+.{suffix}'\n")
 
+def convert_json_to_srs(json_file: str) -> None:
+    output_file = json_file.replace('.json', '.srs')
+    try:
+        subprocess.run(['sing-box', 'rule-set', 'compile', json_file, '-o', output_file], check=True)
+        print(f"Successfully converted {json_file} to {output_file}")
+    except subprocess.CalledProcessError as e:
+        print(f"Error converting {json_file} to SRS: {e}")
+
+def convert_yaml_to_mrs(yaml_file: str) -> None:
+    output_file = yaml_file.replace('.yaml', '.mrs')
+    try:
+        subprocess.run(['mihomo', 'convert-ruleset', 'domain', 'yaml', yaml_file, output_file], check=True)
+        print(f"Successfully converted {yaml_file} to {output_file}")
+    except subprocess.CalledProcessError as e:
+        print(f"Error converting {yaml_file} to MRS: {e}")
+        
 def process_urls(config: Dict[str, List[str]]) -> None:
     """Process URLs and generate output files."""
     for output_base, urls in config.items():
@@ -109,15 +125,18 @@ def process_urls(config: Dict[str, List[str]]) -> None:
         write_txt(domains, domain_suffixes, f"{base_name}.txt")
         write_yaml(domains, domain_suffixes, f"{base_name}.yaml")
 
+        # Convert JSON to SRS
+        convert_json_to_srs(json_file)
+        
+        # Convert YAML to MRS
+        convert_yaml_to_mrs(yaml_file)
+
 def main() -> None:
     """Main function to run the domain extractor and formatter."""
     config = {
         "rule-set/geosite-cdn": [
             "https://raw.githubusercontent.com/SukkaW/Surge/refs/heads/master/Source/domainset/cdn.conf",
             "https://raw.githubusercontent.com/SukkaW/Surge/refs/heads/master/Source/non_ip/cdn.conf"
-        ],
-        "rule-set/geosite-apple-cn": [
-            "https://raw.githubusercontent.com/SukkaW/Surge/refs/heads/master/Source/non_ip/apple_cn.conf"
         ]
     }
     
