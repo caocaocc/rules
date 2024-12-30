@@ -143,7 +143,7 @@ def process_urls(config: Dict[str, List[str]]) -> None:
 
 def download_geosite_files(base_url: str, base_names: List[str], output_dir: str, extensions: List[str] = ['.json', '.txt', '.yaml', '.list', '.srs', '.mrs']) -> None:
     """
-    Download multiple geoip files from a given base URL and save them to the specified output directory.
+    Download multiple geoip files from a given base URL using wget and save them to the specified output directory.
     
     :param base_url: The base URL where the files are located
     :param base_names: A list of base file names (without extensions)
@@ -159,16 +159,14 @@ def download_geosite_files(base_url: str, base_names: List[str], output_dir: str
             output_path = os.path.join(output_dir, file_name)
             
             try:
-                content = fetch_content(url)
-                if content:
-                    with open(output_path, 'w') as file:
-                        file.write('\n'.join(content))
-                    print(f"Successfully downloaded: {file_name}")
-                else:
-                    print(f"Failed to download: {file_name}")
+                # Using wget to download the file
+                subprocess.run(["wget", "-q", "--show-progress", "-O", output_path, url], check=True)
+                print(f"Successfully downloaded: {file_name}")
             
-            except Exception as e:
+            except subprocess.CalledProcessError as e:
                 print(f"Error downloading {file_name}: {e}")
+            except Exception as e:
+                print(f"Unexpected error while downloading {file_name}: {e}")
                 
 def main() -> None:
     config = {
