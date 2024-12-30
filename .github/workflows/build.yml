@@ -30,7 +30,9 @@ jobs:
         bash <(curl -fsSL "https://raw.githubusercontent.com/caocaocc/scripts/main/mihomo-install.sh")
         
     - name: Generate rule-set
-      run: python generate.py
+      run: |
+        python geosite.py
+        python geoip.py
 
     - name: Deploy GitHub Pages
       if: success()
