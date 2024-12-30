@@ -6,6 +6,8 @@ from typing import List, Set, Tuple, Dict
 from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
 import ipaddress
+import subprocess
+import glob
 
 def fetch_content(url: str, max_retries: int = 3) -> List[str]:
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
@@ -105,22 +107,6 @@ def write_yaml(ipv4_cidrs: List[str], ipv6_cidrs: List[str], filename: str) -> N
         for cidr in ipv4_cidrs + ipv6_cidrs:
             f.write(f"  - '{cidr}'\n")
 
-def convert_json_to_srs(json_file: str) -> None:
-    output_file = json_file.replace('.json', '.srs')
-    try:
-        subprocess.run(['sing-box', 'rule-set', 'compile', json_file, '-o', output_file], check=True)
-        print(f"Successfully converted {json_file} to {output_file}")
-    except subprocess.CalledProcessError as e:
-        print(f"Error converting {json_file} to SRS: {e}")
-
-def convert_yaml_to_mrs(yaml_file: str) -> None:
-    output_file = yaml_file.replace('.yaml', '.mrs')
-    try:
-        subprocess.run(['mihomo', 'convert-ruleset', 'ipcidr', 'yaml', yaml_file, output_file], check=True)
-        print(f"Successfully converted {yaml_file} to {output_file}")
-    except subprocess.CalledProcessError as e:
-        print(f"Error converting {yaml_file} to MRS: {e}")
-
 def process_urls(config: Dict[str, List[str]]) -> None:
     for output_base, urls in config.items():
         ipv4_cidrs, ipv6_cidrs = extract_ip_cidrs(urls)
@@ -133,33 +119,41 @@ def process_urls(config: Dict[str, List[str]]) -> None:
         os.makedirs(directory, exist_ok=True)
         
         base_name = output_base
-        json_file = f"{base_name}.json"
-        yaml_file = f"{base_name}.yaml"
-        
-        write_json(ipv4_cidrs, ipv6_cidrs, json_file)
+        write_json(ipv4_cidrs, ipv6_cidrs, f"{base_name}.json")
         write_list(ipv4_cidrs, ipv6_cidrs, f"{base_name}.list")
         write_txt(ipv4_cidrs, ipv6_cidrs, f"{base_name}.txt")
-        write_yaml(ipv4_cidrs, ipv6_cidrs, yaml_file)
-        
+        write_yaml(ipv4_cidrs, ipv6_cidrs, f"{base_name}.yaml")
         print(f"Successfully generated files for {output_base}")
-        
-        # Convert JSON to SRS
-        convert_json_to_srs(json_file)
-        
-        # Convert YAML to MRS
-        convert_yaml_to_mrs(yaml_file)
 
+def convert_files():
+    # Convert all JSON files to SRS
+    for json_file in glob.glob('rule-set/**/*.json', recursive=True):
+        srs_file = json_file.rsplit('.', 1)[0] + '.srs'
+        try:
+            subprocess.run(f"sing-box rule-set compile {json_file} -o {srs_file}", shell=True, check=True)
+            print(f"Converted {json_file} to {srs_file}")
+        except subprocess.CalledProcessError as e:
+            print(f"Error converting {json_file} to SRS: {e}")
+
+    # Convert all YAML files to MRS
+    for yaml_file in glob.glob('rule-set/**/*.yaml', recursive=True):
+        mrs_file = yaml_file.rsplit('.', 1)[0] + '.mrs'
+        try:
+            subprocess.run(f"mihomo convert-ruleset ipcidr yaml {yaml_file} {mrs_file}", shell=True, check=True)
+            print(f"Converted {yaml_file} to {mrs_file}")
+        except subprocess.CalledProcessError as e:
+            print(f"Error converting {yaml_file} to MRS: {e}")
+            
 def main() -> None:
     config = {
-        "rule-set/geoip-private": [
-            "https://ruleset.skk.moe/List/ip/lan.conf"
+        "rule-set/geoip-cn": [
+            "https://raw.githubusercontent.com/SukkaW/Surge/refs/heads/master/Source/ip/cn.conf",
+            "https://raw.githubusercontent.com/SukkaW/Surge/refs/heads/master/Source/ip6/cn.conf"
         ],
-        "rule-set/geoip-telegram": [
-            "https://core.telegram.org/resources/cidr.txt"
+        "rule-set/geoip-private": [
+            "https://raw.githubusercontent.com/SukkaW/Surge/refs/heads/master/Source/ip/private.conf"
         ]
     }
     
     process_urls(config)
-
-if __name__ == "__main__":
-    main()
+    convert_files()
