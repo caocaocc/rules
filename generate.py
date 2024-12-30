@@ -5,6 +5,7 @@ import json
 import logging
 import subprocess
 from urllib.error import HTTPError, URLError
+import ipaddress
 
 # 设置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -28,9 +29,11 @@ def is_valid_domain(domain):
     return re.match(pattern, domain) is not None
 
 def is_valid_ip_cidr(ip_cidr):
-    ipv4_pattern = r'^\d{1,3}(\.\d{1,3}){3}(/\d{1,2})?$'
-    ipv6_pattern = r'^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}(/\d{1,3})?$'
-    return re.match(ipv4_pattern, ip_cidr) or re.match(ipv6_pattern, ip_cidr)
+    try:
+        ipaddress.ip_network(ip_cidr, strict=False)
+        return True
+    except ValueError:
+        return False
 
 def process_line(line):
     line = line.strip()
@@ -38,12 +41,19 @@ def process_line(line):
     if line.startswith('#') or not line:
         return None, None
 
-    if line.startswith('DOMAIN,') or line.startswith('DOMAIN-SUFFIX,'):
+    if line.startswith('DOMAIN,'):
         parts = line.split(',', 1)
         if len(parts) > 1:
             domain = parts[1].strip()
             if is_valid_domain(domain):
                 return 'DOMAIN', domain
+
+    if line.startswith('DOMAIN-SUFFIX,'):
+        parts = line.split(',', 1)
+        if len(parts) > 1:
+            domain_suffix = parts[1].strip()
+            if is_valid_domain(domain_suffix):
+                return 'DOMAIN-SUFFIX', domain_suffix
 
     if line.startswith('IP-CIDR,') or line.startswith('IP-CIDR6,'):
         parts = line.split(',', 1)
@@ -61,6 +71,7 @@ def process_line(line):
 def process_urls(urls):
     ip_cidrs = set()
     domains = set()
+    domain_suffixes = set()
 
     for url in urls:
         logging.info(f"Processing URL: {url}")
@@ -71,8 +82,10 @@ def process_urls(urls):
                 ip_cidrs.add(value)
             elif rule_type == 'DOMAIN':
                 domains.add(value)
+            elif rule_type == 'DOMAIN-SUFFIX':
+                domain_suffixes.add(value)
 
-    return sorted(ip_cidrs), sorted(domains)
+    return sorted(ip_cidrs), sorted(domains), sorted(domain_suffixes)
 
 def write_txt(items, filename):
     try:
@@ -82,9 +95,12 @@ def write_txt(items, filename):
     except IOError as e:
         logging.error(f"Error writing to file {filename}: {e}")
 
-def write_list(items, filename, prefix=''):
+def write_list(domains, domain_suffixes, ip_cidrs, filename):
     try:
-        content = [f"{prefix}{item}" for item in items]
+        content = []
+        content.extend(f"DOMAIN,{domain}" for domain in domains)
+        content.extend(f"DOMAIN-SUFFIX,{suffix}" for suffix in domain_suffixes)
+        content.extend(f"IP-CIDR,{ip_cidr}" for ip_cidr in ip_cidrs)
         with open(filename, 'w') as f:
             f.write('\n'.join(content))
         logging.info(f"Wrote LIST format to {filename}")
@@ -117,22 +133,25 @@ def write_json(items, filename, key):
     except IOError as e:
         logging.error(f"Error writing to file {filename}: {e}")
 
-def write_files(items, base_filename, item_type):
-    if not items:
-        logging.warning(f"No valid {item_type} found for {base_filename}")
-        return
-
-    logging.info(f"Found {len(items)} unique {item_type} for {base_filename}")
-    
-    write_txt(items, f'rule-set/{base_filename}.txt')
-    
+def write_files(ip_cidrs, domains, domain_suffixes, base_filename, item_type):
     if item_type == 'ip_cidr':
-        write_list(items, f'rule-set/{base_filename}.list', 'IP-CIDR,')
-    else:
-        write_list(items, f'rule-set/{base_filename}.list', 'DOMAIN,')
-    
-    write_yaml(items, f'rule-set/{base_filename}.yaml')
-    write_json(items, f'rule-set/{base_filename}.json', item_type)
+        if not ip_cidrs:
+            logging.warning(f"No valid IP CIDRs found for {base_filename}")
+            return
+        logging.info(f"Found {len(ip_cidrs)} unique IP CIDRs for {base_filename}")
+        write_txt(ip_cidrs, f'rule-set/{base_filename}.txt')
+        write_list([], [], ip_cidrs, f'rule-set/{base_filename}.list')
+        write_yaml(ip_cidrs, f'rule-set/{base_filename}.yaml')
+        write_json(ip_cidrs, f'rule-set/{base_filename}.json', 'ip_cidr')
+    elif item_type == 'domain':
+        if not domains and not domain_suffixes:
+            logging.warning(f"No valid domains or domain suffixes found for {base_filename}")
+            return
+        logging.info(f"Found {len(domains)} unique domains and {len(domain_suffixes)} unique domain suffixes for {base_filename}")
+        write_txt(domains + domain_suffixes, f'rule-set/{base_filename}.txt')
+        write_list(domains, domain_suffixes, [], f'rule-set/{base_filename}.list')
+        write_yaml(domains + domain_suffixes, f'rule-set/{base_filename}.yaml')
+        write_json(domains + domain_suffixes, f'rule-set/{base_filename}.json', 'domain')
 
 def is_command_available(command):
     try:
@@ -178,14 +197,9 @@ def process_and_write_files(config):
     base_filename = config["base_filename"]
     data_type = config["type"]
 
-    ip_cidrs, domains = process_urls(urls)
+    ip_cidrs, domains, domain_suffixes = process_urls(urls)
 
-    if data_type == "geoip":
-        write_files(ip_cidrs, base_filename, 'ip_cidr')
-    elif data_type == "geosite":
-        write_files(domains, base_filename, 'domain')
-    else:
-        logging.error(f"Unknown data type: {data_type}")
+    write_files(ip_cidrs, domains, domain_suffixes, base_filename, data_type)
 
 def main():
     # 确保 rule-set 目录存在
@@ -196,7 +210,7 @@ def main():
         {
             "urls": ["https://ruleset.skk.moe/List/ip/lan.conf"],
             "base_filename": "geoip-private",
-            "type": "geoip"
+            "type": "ip_cidr"
         },
         {
             "urls": [
@@ -204,12 +218,13 @@ def main():
                 "https://raw.githubusercontent.com/SukkaW/Surge/refs/heads/master/Source/non_ip/cdn.conf"
             ],
             "base_filename": "geosite-cdn",
-            "type": "geosite"
+            "type": "domain"
         },
+        可以轻松添加新的配置，例如：
         {
             "urls": ["https://core.telegram.org/resources/cidr.txt"],
             "base_filename": "geoip-telegram",
-            "type": "geoip"
+            "type": "ip_cidr"
         },
     ]
 
