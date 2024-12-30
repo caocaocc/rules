@@ -128,9 +128,18 @@ def write_domain_json(domains, domain_suffixes, filename):
 
 # Geoip 处理函数
 def is_valid_ip_cidr(ip_cidr):
-    ipv4_pattern = r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$'
-    ipv6_pattern = r'^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}/\d{1,3}$'
+    ipv4_pattern = r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(/\d{1,2})?$'
+    ipv6_pattern = r'^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}(/\d{1,3})?$'
     return re.match(ipv4_pattern, ip_cidr) or re.match(ipv6_pattern, ip_cidr)
+
+def extract_ip_cidr(line):
+    # 尝试匹配 IP-CIDR 或 IP-CIDR6 格式
+    match = re.search(r'(IP-CIDR6?[,\s]+)?(\S+)', line)
+    if match:
+        potential_ip_cidr = match.group(2)
+        if is_valid_ip_cidr(potential_ip_cidr):
+            return potential_ip_cidr
+    return None
 
 def process_ip_line(line):
     line = line.strip()
@@ -141,18 +150,19 @@ def process_ip_line(line):
     if not line:
         return None
 
-    # 检查是否为有效的 IP CIDR
-    if is_valid_ip_cidr(line):
-        return line
+    # 尝试提取 IP CIDR
+    ip_cidr = extract_ip_cidr(line)
+    if ip_cidr:
+        return ip_cidr
 
-    logging.warning(f"Skipped invalid IP CIDR: {line}")
+    logging.warning(f"No valid IP CIDR found in line: {line}")
     return None
 
 def process_ip_urls(urls):
     ip_cidrs = set()
 
     for url in urls:
-        logging.info(f"Processing IP URL: {url}")
+        logging.info(f"Processing URL: {url}")
         content = fetch_content(url)
         for line in content:
             processed = process_ip_line(line)
@@ -269,9 +279,8 @@ def main():
     else:
         logging.error("No valid domains found. Check the domain source URLs and their content.")
 
-    # Geoip 处理
     ip_urls = [
-        # 在这里添加您的 IP CIDR URL 列表
+        # 在这里添加您的 URL 列表
         "https://ruleset.skk.moe/List/ip/lan.conf",
     ]
 
@@ -283,7 +292,7 @@ def main():
         write_ip_yaml(ip_cidrs, 'rule-set/geoip-private.yaml')
         write_ip_json(ip_cidrs, 'rule-set/geoip-private.json')
     else:
-        logging.error("No valid IP CIDRs found. Check the IP source URLs and their content.")
+        logging.error("No valid IP CIDRs found. Check the source URLs and their content.")
 
     # 编译和转换规则
     compile_sing_box_rules()
