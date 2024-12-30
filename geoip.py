@@ -7,7 +7,6 @@ from urllib.error import URLError
 import ipaddress
 
 def fetch_content(url: str) -> List[str]:
-    """Fetch content from a given URL."""
     try:
         with urlopen(url) as response:
             return response.read().decode('utf-8').splitlines()
@@ -15,60 +14,58 @@ def fetch_content(url: str) -> List[str]:
         print(f"Error downloading {url}: {e}")
         return []
 
+def remove_comments(lines: List[str]) -> List[str]:
+    return [line.strip() for line in lines if line.strip() and not line.strip().startswith(('#', ';'))]
+
 def parse_line(line: str) -> Tuple[Set[str], Set[str]]:
-    """Parse a single line and extract IPv4 and IPv6 CIDR."""
     ipv4_cidrs = set()
     ipv6_cidrs = set()
     
-    patterns = {
-        'ip_cidr': re.compile(r'^IP-CIDR,(.+)$'),
-        'ip_cidr6': re.compile(r'^IP-CIDR6,(.+)$'),
-        'plain_cidr': re.compile(r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}|[0-9a-fA-F:]+/\d{1,3})$'),
-    }
+    ipv4_pattern = r'\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2})\b'
+    ipv6_pattern = r'\b([0-9a-fA-F:]+/\d{1,3})\b'
     
-    line = line.strip()
+    ipv4_matches = re.findall(ipv4_pattern, line)
+    ipv6_matches = re.findall(ipv6_pattern, line)
     
-    if patterns['ip_cidr'].match(line):
-        cidr = patterns['ip_cidr'].match(line).group(1)
-        ipv4_cidrs.add(cidr)
-    elif patterns['ip_cidr6'].match(line):
-        cidr = patterns['ip_cidr6'].match(line).group(1)
-        ipv6_cidrs.add(cidr)
-    elif patterns['plain_cidr'].match(line):
+    for match in ipv4_matches:
         try:
-            ip_network = ipaddress.ip_network(line)
-            if ip_network.version == 4:
-                ipv4_cidrs.add(str(ip_network))
-            else:
-                ipv6_cidrs.add(str(ip_network))
+            ipaddress.IPv4Network(match)
+            ipv4_cidrs.add(match)
         except ValueError:
-            # Invalid IP network, skip this line
-            pass
+            print(f"Invalid IPv4 CIDR: {match}")
+    
+    for match in ipv6_matches:
+        try:
+            ipaddress.IPv6Network(match)
+            ipv6_cidrs.add(match)
+        except ValueError:
+            print(f"Invalid IPv6 CIDR: {match}")
     
     return ipv4_cidrs, ipv6_cidrs
 
 def extract_ip_cidrs(urls: List[str]) -> Tuple[List[str], List[str]]:
-    """Extract IPv4 and IPv6 CIDRs from given URLs or content."""
     all_ipv4_cidrs = set()
     all_ipv6_cidrs = set()
     
     for url in urls:
         lines = fetch_content(url) if url.startswith('http') else url.splitlines()
+        lines = remove_comments(lines)
         for line in lines:
             ipv4_cidrs, ipv6_cidrs = parse_line(line)
             all_ipv4_cidrs.update(ipv4_cidrs)
             all_ipv6_cidrs.update(ipv6_cidrs)
     
-    return sorted(all_ipv4_cidrs), sorted(all_ipv6_cidrs)
+    return sort_ip_cidrs(list(all_ipv4_cidrs)), sort_ip_cidrs(list(all_ipv6_cidrs))
+
+def sort_ip_cidrs(cidrs: List[str]) -> List[str]:
+    return sorted(cidrs, key=lambda x: (ipaddress.ip_network(x).network_address, ipaddress.ip_network(x).prefixlen))
 
 def write_json(ipv4_cidrs: List[str], ipv6_cidrs: List[str], filename: str) -> None:
-    """Write IPv4 and IPv6 CIDRs to a JSON file."""
     data = {
         "version": 1,
         "rules": [
             {
-                "ip_cidr": ipv4_cidrs,
-                "ip_cidr6": ipv6_cidrs
+                "ip_cidr": ipv4_cidrs + ipv6_cidrs
             }
         ]
     }
@@ -76,7 +73,6 @@ def write_json(ipv4_cidrs: List[str], ipv6_cidrs: List[str], filename: str) -> N
         json.dump(data, f, indent=2)
 
 def write_list(ipv4_cidrs: List[str], ipv6_cidrs: List[str], filename: str) -> None:
-    """Write IPv4 and IPv6 CIDRs to a list file."""
     with open(filename, 'w') as f:
         for cidr in ipv4_cidrs:
             f.write(f"IP-CIDR,{cidr}\n")
@@ -84,7 +80,6 @@ def write_list(ipv4_cidrs: List[str], ipv6_cidrs: List[str], filename: str) -> N
             f.write(f"IP-CIDR6,{cidr}\n")
 
 def write_txt(ipv4_cidrs: List[str], ipv6_cidrs: List[str], filename: str) -> None:
-    """Write IPv4 and IPv6 CIDRs to a text file."""
     with open(filename, 'w') as f:
         for cidr in ipv4_cidrs:
             f.write(f"{cidr}\n")
@@ -92,16 +87,12 @@ def write_txt(ipv4_cidrs: List[str], ipv6_cidrs: List[str], filename: str) -> No
             f.write(f"{cidr}\n")
 
 def write_yaml(ipv4_cidrs: List[str], ipv6_cidrs: List[str], filename: str) -> None:
-    """Write IPv4 and IPv6 CIDRs to a YAML file."""
     with open(filename, 'w') as f:
         f.write("payload:\n")
-        for cidr in ipv4_cidrs:
-            f.write(f"  - '{cidr}'\n")
-        for cidr in ipv6_cidrs:
+        for cidr in ipv4_cidrs + ipv6_cidrs:
             f.write(f"  - '{cidr}'\n")
 
 def process_urls(config: Dict[str, List[str]]) -> None:
-    """Process URLs and generate output files."""
     for output_base, urls in config.items():
         ipv4_cidrs, ipv6_cidrs = extract_ip_cidrs(urls)
         
@@ -115,12 +106,11 @@ def process_urls(config: Dict[str, List[str]]) -> None:
         write_yaml(ipv4_cidrs, ipv6_cidrs, f"{base_name}.yaml")
 
 def main() -> None:
-    """Main function to run the IP CIDR extractor and formatter."""
     config = {
-        "rule-set/geoip-private": [
+        "rule-set/geoip-cn": [
             "https://ruleset.skk.moe/List/ip/lan.conf"
         ],
-        "rule-set/geoip-telegram": [
+        "rule-set/geoip-private": [
             "https://core.telegram.org/resources/cidr.txt"
         ]
     }
