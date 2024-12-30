@@ -1,25 +1,37 @@
 import json
 import os
+from urllib.request import urlopen
+from urllib.error import URLError
 from urllib.parse import urlparse
+
+def download_content(url):
+    try:
+        with urlopen(url) as response:
+            return response.read().decode('utf-8').splitlines()
+    except URLError as e:
+        print(f"Error downloading {url}: {e}")
+        return []
 
 def extract_domains(urls):
     domains = set()
     domain_suffixes = set()
     
     for url in urls:
-        url = url.strip()
-        if url.startswith('DOMAIN,'):
-            domains.add(url.split(',')[1])
-        elif url.startswith('DOMAIN-SUFFIX,'):
-            domain_suffixes.add(url.split(',')[1])
-        elif url.startswith('.'):
-            domain_suffixes.add(url[1:])
-        else:
-            parsed = urlparse(url)
-            if parsed.netloc:
-                domains.add(parsed.netloc)
-            elif parsed.path:
-                domains.add(parsed.path)
+        lines = download_content(url)
+        for line in lines:
+            line = line.strip()
+            if line.startswith('DOMAIN,'):
+                domains.add(line.split(',')[1])
+            elif line.startswith('DOMAIN-SUFFIX,'):
+                domain_suffixes.add(line.split(',')[1])
+            elif line.startswith('.'):
+                domain_suffixes.add(line[1:])
+            else:
+                parsed = urlparse(line)
+                if parsed.netloc:
+                    domains.add(parsed.netloc)
+                elif parsed.path:
+                    domains.add(parsed.path)
     
     return sorted(domains), sorted(domain_suffixes)
 
@@ -28,13 +40,13 @@ def process_urls(config):
         domains, domain_suffixes = extract_domains(urls)
         
         # Create full path including any subdirectories
-        directory = os.path.join('rule-set', os.path.dirname(output_base))
+        directory = os.path.dirname(output_base)
         
         # Create subdirectories if they don't exist
         os.makedirs(directory, exist_ok=True)
         
         # Generate files for each supported format
-        base_name = os.path.join(directory, os.path.basename(output_base))
+        base_name = output_base
         write_json(domains, domain_suffixes, f"{base_name}.json")
         write_list(domains, domain_suffixes, f"{base_name}.list")
         write_txt(domains, domain_suffixes, f"{base_name}.txt")
