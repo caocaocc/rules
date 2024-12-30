@@ -105,6 +105,22 @@ def write_yaml(ipv4_cidrs: List[str], ipv6_cidrs: List[str], filename: str) -> N
         for cidr in ipv4_cidrs + ipv6_cidrs:
             f.write(f"  - '{cidr}'\n")
 
+def convert_json_to_srs(json_file: str) -> None:
+    output_file = json_file.replace('.json', '.srs')
+    try:
+        subprocess.run(['sing-box', 'rule-set', 'compile', json_file, '-o', output_file], check=True)
+        print(f"Successfully converted {json_file} to {output_file}")
+    except subprocess.CalledProcessError as e:
+        print(f"Error converting {json_file} to SRS: {e}")
+
+def convert_yaml_to_mrs(yaml_file: str) -> None:
+    output_file = yaml_file.replace('.yaml', '.mrs')
+    try:
+        subprocess.run(['mihomo', 'convert-ruleset', 'ipcidr', 'yaml', yaml_file, output_file], check=True)
+        print(f"Successfully converted {yaml_file} to {output_file}")
+    except subprocess.CalledProcessError as e:
+        print(f"Error converting {yaml_file} to MRS: {e}")
+
 def process_urls(config: Dict[str, List[str]]) -> None:
     for output_base, urls in config.items():
         ipv4_cidrs, ipv6_cidrs = extract_ip_cidrs(urls)
@@ -117,11 +133,21 @@ def process_urls(config: Dict[str, List[str]]) -> None:
         os.makedirs(directory, exist_ok=True)
         
         base_name = output_base
-        write_json(ipv4_cidrs, ipv6_cidrs, f"{base_name}.json")
+        json_file = f"{base_name}.json"
+        yaml_file = f"{base_name}.yaml"
+        
+        write_json(ipv4_cidrs, ipv6_cidrs, json_file)
         write_list(ipv4_cidrs, ipv6_cidrs, f"{base_name}.list")
         write_txt(ipv4_cidrs, ipv6_cidrs, f"{base_name}.txt")
-        write_yaml(ipv4_cidrs, ipv6_cidrs, f"{base_name}.yaml")
+        write_yaml(ipv4_cidrs, ipv6_cidrs, yaml_file)
+        
         print(f"Successfully generated files for {output_base}")
+        
+        # Convert JSON to SRS
+        convert_json_to_srs(json_file)
+        
+        # Convert YAML to MRS
+        convert_yaml_to_mrs(yaml_file)
 
 def main() -> None:
     config = {
