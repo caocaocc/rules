@@ -125,6 +125,8 @@ def process_urls(config: Dict[str, List[str]]) -> None:
         write_txt(domains, domain_suffixes, f"{base_name}.txt")
         write_yaml(domains, domain_suffixes, f"{base_name}.yaml")
 
+        print(f"Successfully generated files for {output_base}")
+
         # Convert JSON to SRS
         convert_json_to_srs(json_file)
         
