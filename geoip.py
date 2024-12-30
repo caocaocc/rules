@@ -1,18 +1,31 @@
 import json
 import os
 import re
+import time
 from typing import List, Set, Tuple, Dict
-from urllib.request import urlopen
-from urllib.error import URLError
+from urllib.request import urlopen, Request
+from urllib.error import URLError, HTTPError
 import ipaddress
 
-def fetch_content(url: str) -> List[str]:
-    try:
-        with urlopen(url) as response:
-            return response.read().decode('utf-8').splitlines()
-    except URLError as e:
-        print(f"Error downloading {url}: {e}")
-        return []
+def fetch_content(url: str, max_retries: int = 3) -> List[str]:
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+    for attempt in range(max_retries):
+        try:
+            req = Request(url, headers=headers)
+            with urlopen(req) as response:
+                return response.read().decode('utf-8').splitlines()
+        except HTTPError as e:
+            print(f"HTTP Error {e.code} while downloading {url}")
+            if attempt == max_retries - 1:
+                print(f"Max retries reached. Skipping {url}")
+                return []
+        except URLError as e:
+            print(f"URL Error while downloading {url}: {e.reason}")
+            if attempt == max_retries - 1:
+                print(f"Max retries reached. Skipping {url}")
+                return []
+        time.sleep(2 ** attempt)  # Exponential backoff
+    return []
 
 def remove_comments(lines: List[str]) -> List[str]:
     return [line.strip() for line in lines if line.strip() and not line.strip().startswith(('#', ';'))]
@@ -96,6 +109,10 @@ def process_urls(config: Dict[str, List[str]]) -> None:
     for output_base, urls in config.items():
         ipv4_cidrs, ipv6_cidrs = extract_ip_cidrs(urls)
         
+        if not ipv4_cidrs and not ipv6_cidrs:
+            print(f"Warning: No valid CIDRs found for {output_base}")
+            continue
+        
         directory = os.path.dirname(output_base)
         os.makedirs(directory, exist_ok=True)
         
@@ -104,6 +121,7 @@ def process_urls(config: Dict[str, List[str]]) -> None:
         write_list(ipv4_cidrs, ipv6_cidrs, f"{base_name}.list")
         write_txt(ipv4_cidrs, ipv6_cidrs, f"{base_name}.txt")
         write_yaml(ipv4_cidrs, ipv6_cidrs, f"{base_name}.yaml")
+        print(f"Successfully generated files for {output_base}")
 
 def main() -> None:
     config = {
