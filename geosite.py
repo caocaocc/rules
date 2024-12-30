@@ -120,6 +120,30 @@ def convert_yaml_to_mrs(yaml_file: str) -> None:
         except FileNotFoundError:
             print("Error: 'mihomo' command not found. Make sure it's installed and in your PATH.")
 
+def convert_files(base_name: str) -> None:
+    json_file = f"{base_name}.json"
+    yaml_file = f"{base_name}.yaml"
+    
+    if 'geosite' in json_file:
+        srs_file = json_file.replace('.json', '.srs')
+        try:
+            subprocess.run(['sing-box', 'rule-set', 'compile', json_file, '-o', srs_file], check=True)
+            print(f"Successfully converted {json_file} to {srs_file}")
+        except subprocess.CalledProcessError as e:
+            print(f"Error converting {json_file} to SRS: {e}")
+        except FileNotFoundError:
+            print("Error: 'sing-box' command not found. Make sure it's installed and in your PATH.")
+    
+    if 'geosite' in yaml_file:
+        mrs_file = yaml_file.replace('.yaml', '.mrs')
+        try:
+            subprocess.run(['mihomo', 'convert-ruleset', 'domain', 'yaml', yaml_file, mrs_file], check=True)
+            print(f"Successfully converted {yaml_file} to {mrs_file}")
+        except subprocess.CalledProcessError as e:
+            print(f"Error converting {yaml_file} to MRS: {e}")
+        except FileNotFoundError:
+            print("Error: 'mihomo' command not found. Make sure it's installed and in your PATH.")
+
 def process_urls(config: Dict[str, List[str]]) -> None:
     for output_base, urls in config.items():
         domains, domain_suffixes = extract_domains(urls)
@@ -135,9 +159,7 @@ def process_urls(config: Dict[str, List[str]]) -> None:
 
         print(f"Successfully generated files for {output_base}")
 
-        convert_json_to_srs(f"{base_name}.json")
-        
-        convert_yaml_to_mrs(f"{base_name}.yaml")
+        convert_files(base_name)
 
 def main() -> None:
     config = {
