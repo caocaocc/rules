@@ -46,8 +46,11 @@ def parse_ip_line(line: str) -> Tuple[Set[str], Set[str]]:
     
     for match in ipv6_matches:
         try:
-            ipaddress.IPv6Network(match)
-            ipv6_cidrs.add(match)
+            if ':' in match:
+                ipaddress.IPv6Network(match)
+                ipv6_cidrs.add(match)
+            else:
+                print(f"Skipping potential IPv4 address in IPv6 parsing: {match}")
         except ValueError:
             print(f"Invalid IPv6 CIDR: {match}")
     
