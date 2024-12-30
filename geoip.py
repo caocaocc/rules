@@ -148,9 +148,9 @@ def process_urls(config: Dict[str, List[str]]) -> None:
 
 def main() -> None:
     config = {
-        # "rule-set/geoip-private": [
-        #     "https://ruleset.skk.moe/List/ip/lan.conf"
-        # ],
+        "rule-set/geoip-private": [
+            "https://ruleset.skk.moe/List/ip/lan.conf"
+        ],
         "rule-set/geoip-telegram": [
             "https://core.telegram.org/resources/cidr.txt"
         ]
