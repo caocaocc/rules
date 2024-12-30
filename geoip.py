@@ -100,24 +100,27 @@ def write_yaml(ipv4_cidrs: List[str], ipv6_cidrs: List[str], filename: str) -> N
         for cidr in ipv4_cidrs + ipv6_cidrs:
             f.write(f"  - '{cidr}'\n")
 
-def convert_files() -> None:
-    for json_file in glob.glob('rule-set/**/*.json', recursive=True):
-        if 'geoip' in json_file:
-            srs_file = json_file.rsplit('.', 1)[0] + '.srs'
-            try:
-                subprocess.run(["sing-box", "rule-set", "compile", json_file, "-o", srs_file], check=True)
-                print(f"Converted {json_file} to {srs_file}")
-            except subprocess.CalledProcessError as e:
-                print(f"Error converting {json_file} to SRS: {e}")
+def convert_to_srs(json_file: str) -> None:
+    if 'geoip' in json_file:
+        srs_file = json_file.rsplit('.', 1)[0] + '.srs'
+        try:
+            subprocess.run(["sing-box", "rule-set", "compile", json_file, "-o", srs_file], check=True)
+            print(f"Converted {json_file} to {srs_file}")
+        except subprocess.CalledProcessError as e:
+            print(f"Error converting {json_file} to SRS: {e}")
+        except FileNotFoundError:
+            print("Error: 'sing-box' command not found. Make sure it's installed and in your PATH.")
 
-    for yaml_file in glob.glob('rule-set/**/*.yaml', recursive=True):
-        if 'geoip' in yaml_file:
-            mrs_file = yaml_file.rsplit('.', 1)[0] + '.mrs'
-            try:
-                subprocess.run(["mihomo", "convert-ruleset", "ipcidr", "yaml", yaml_file, mrs_file], check=True)
-                print(f"Converted {yaml_file} to {mrs_file}")
-            except subprocess.CalledProcessError as e:
-                print(f"Error converting {yaml_file} to MRS: {e}")
+def convert_to_mrs(yaml_file: str) -> None:
+    if 'geoip' in yaml_file:
+        mrs_file = yaml_file.rsplit('.', 1)[0] + '.mrs'
+        try:
+            subprocess.run(["mihomo", "convert-ruleset", "ipcidr", "yaml", yaml_file, mrs_file], check=True)
+            print(f"Converted {yaml_file} to {mrs_file}")
+        except subprocess.CalledProcessError as e:
+            print(f"Error converting {yaml_file} to MRS: {e}")
+        except FileNotFoundError:
+            print("Error: 'mihomo' command not found. Make sure it's installed and in your PATH.")
 
 def process_urls(config: Dict[str, List[str]]) -> None:
     for output_base, urls in config.items():
@@ -130,13 +133,15 @@ def process_urls(config: Dict[str, List[str]]) -> None:
         directory = os.path.dirname(output_base)
         os.makedirs(directory, exist_ok=True)
         
-        base_name = output_base
-        write_json(ipv4_cidrs, ipv6_cidrs, f"{base_name}.json")
-        write_list(ipv4_cidrs, ipv6_cidrs, f"{base_name}.list")
-        write_txt(ipv4_cidrs, ipv6_cidrs, f"{base_name}.txt")
-        write_yaml(ipv4_cidrs, ipv6_cidrs, f"{base_name}.yaml")
+        write_json(ipv4_cidrs, ipv6_cidrs, f"{output_base}.json")
+        write_list(ipv4_cidrs, ipv6_cidrs, f"{output_base}.list")
+        write_txt(ipv4_cidrs, ipv6_cidrs, f"{output_base}.txt")
+        write_yaml(ipv4_cidrs, ipv6_cidrs, f"{output_base}.yaml")
         
         print(f"Successfully generated files for {output_base}")
+        
+        convert_to_srs(f"{output_base}.json")
+        convert_to_mrs(f"{output_base}.yaml")
 
 def main() -> None:
     config = {
@@ -149,7 +154,6 @@ def main() -> None:
     }
     
     process_urls(config)
-    convert_files()
 
 if __name__ == "__main__":
     main()
