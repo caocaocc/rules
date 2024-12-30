@@ -1,4 +1,4 @@
-name: Update Geo Lists and Generate CDN List
+name: Get Rule-Set
 
 on:
   schedule:
