@@ -82,7 +82,7 @@ def main():
             "https://raw.githubusercontent.com/SukkaW/Surge/refs/heads/master/Source/domainset/cdn.conf",
             "https://raw.githubusercontent.com/SukkaW/Surge/refs/heads/master/Source/non_ip/cdn.conf"
         ],
-        "folder2/geosite-apple-cn": [
+        "rule-set/geosite-apple-cn": [
             "https://raw.githubusercontent.com/SukkaW/Surge/refs/heads/master/Source/non_ip/apple_cn.conf"
         ]
     }
