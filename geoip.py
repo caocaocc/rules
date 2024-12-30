@@ -31,29 +31,26 @@ def parse_ip_line(line: str) -> Tuple[Set[str], Set[str]]:
     ipv4_cidrs = set()
     ipv6_cidrs = set()
     
-    ipv4_pattern = r'\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2})\b'
-    ipv6_pattern = r'\b([0-9a-fA-F:]+/\d{1,3})\b'
+    # 移除所有空白字符
+    line = ''.join(line.split())
     
-    ipv4_matches = re.findall(ipv4_pattern, line)
-    ipv6_matches = re.findall(ipv6_pattern, line)
-    
-    for match in ipv4_matches:
+    # 尝试从行中提取 CIDR
+    try:
+        # 尝试作为 IPv4 CIDR 解析
+        network = ipaddress.IPv4Network(line, strict=False)
+        ipv4_cidrs.add(str(network))
+    except ipaddress.AddressValueError:
         try:
-            ipaddress.IPv4Network(match)
-            ipv4_cidrs.add(match)
-        except ValueError:
-            print(f"Invalid IPv4 CIDR: {match}")
-    
-    for match in ipv6_matches:
-        try:
-            if ':' in match:
-                ipaddress.IPv6Network(match)
-                ipv6_cidrs.add(match)
-            else:
-                print(f"Skipping potential IPv4 address in IPv6 parsing: {match}")
-        except ValueError:
-            print(f"Invalid IPv6 CIDR: {match}")
-    
+            # 如果不是 IPv4，尝试作为 IPv6 CIDR 解析
+            network = ipaddress.IPv6Network(line, strict=False)
+            ipv6_cidrs.add(str(network))
+        except ipaddress.AddressValueError:
+            # 如果既不是 IPv4 也不是 IPv6，则忽略这行
+            pass
+    except ValueError:
+        # 如果格式完全不对，忽略这行
+        pass
+
     return ipv4_cidrs, ipv6_cidrs
 
 def extract_ip_cidrs(urls: List[str]) -> Tuple[List[str], List[str]]:
@@ -62,11 +59,12 @@ def extract_ip_cidrs(urls: List[str]) -> Tuple[List[str], List[str]]:
     
     for url in urls:
         lines = fetch_content(url) if url.startswith('http') else url.splitlines()
-        lines = remove_comments(lines)
         for line in lines:
-            ipv4_cidrs, ipv6_cidrs = parse_ip_line(line)
-            all_ipv4_cidrs.update(ipv4_cidrs)
-            all_ipv6_cidrs.update(ipv6_cidrs)
+            line = line.strip()
+            if line and not line.startswith(('#', ';')):
+                ipv4_cidrs, ipv6_cidrs = parse_ip_line(line)
+                all_ipv4_cidrs.update(ipv4_cidrs)
+                all_ipv6_cidrs.update(ipv6_cidrs)
     
     return sort_ip_cidrs(list(all_ipv4_cidrs)), sort_ip_cidrs(list(all_ipv6_cidrs))
 
