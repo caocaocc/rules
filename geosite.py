@@ -9,7 +9,6 @@ import subprocess
 import glob
 
 def fetch_content(url: str, max_retries: int = 3) -> List[str]:
-    """Fetch content from a given URL with retries."""
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
     for attempt in range(max_retries):
         try:
@@ -21,11 +20,10 @@ def fetch_content(url: str, max_retries: int = 3) -> List[str]:
             if attempt == max_retries - 1:
                 print(f"Max retries reached. Skipping {url}")
                 return []
-        time.sleep(2 ** attempt)  # Exponential backoff
+        time.sleep(2 ** attempt)
     return []
 
 def parse_domain_line(line: str) -> Tuple[Set[str], Set[str]]:
-    """Parse a single line and extract domain or domain suffix."""
     domains = set()
     domain_suffixes = set()
     
@@ -53,7 +51,6 @@ def parse_domain_line(line: str) -> Tuple[Set[str], Set[str]]:
     return domains, domain_suffixes
 
 def extract_domains(urls: List[str]) -> Tuple[List[str], List[str]]:
-    """Extract domains and domain suffixes from given URLs or content."""
     all_domains = set()
     all_domain_suffixes = set()
     
@@ -67,7 +64,6 @@ def extract_domains(urls: List[str]) -> Tuple[List[str], List[str]]:
     return sorted(all_domains), sorted(all_domain_suffixes)
 
 def write_json(domains: List[str], domain_suffixes: List[str], filename: str) -> None:
-    """Write domains and domain suffixes to a JSON file."""
     data = {
         "version": 1,
         "rules": [
@@ -81,7 +77,6 @@ def write_json(domains: List[str], domain_suffixes: List[str], filename: str) ->
         json.dump(data, f, indent=2)
 
 def write_list(domains: List[str], domain_suffixes: List[str], filename: str) -> None:
-    """Write domains and domain suffixes to a list file."""
     with open(filename, 'w') as f:
         for domain in domains:
             f.write(f"DOMAIN,{domain}\n")
@@ -89,7 +84,6 @@ def write_list(domains: List[str], domain_suffixes: List[str], filename: str) ->
             f.write(f"DOMAIN-SUFFIX,{suffix}\n")
 
 def write_txt(domains: List[str], domain_suffixes: List[str], filename: str) -> None:
-    """Write domains and domain suffixes to a text file."""
     with open(filename, 'w') as f:
         for domain in domains:
             f.write(f"{domain}\n")
@@ -97,7 +91,6 @@ def write_txt(domains: List[str], domain_suffixes: List[str], filename: str) -> 
             f.write(f"+.{suffix}\n")
 
 def write_yaml(domains: List[str], domain_suffixes: List[str], filename: str) -> None:
-    """Write domains and domain suffixes to a YAML file."""
     with open(filename, 'w') as f:
         f.write("payload:\n")
         for domain in domains:
@@ -106,7 +99,6 @@ def write_yaml(domains: List[str], domain_suffixes: List[str], filename: str) ->
             f.write(f"  - '+.{suffix}'\n")
 
 def convert_json_to_srs(json_file: str) -> None:
-    """Convert JSON file to SRS format."""
     if 'geosite' in json_file:
         output_file = json_file.replace('.json', '.srs')
         try:
@@ -114,19 +106,21 @@ def convert_json_to_srs(json_file: str) -> None:
             print(f"Successfully converted {json_file} to {output_file}")
         except subprocess.CalledProcessError as e:
             print(f"Error converting {json_file} to SRS: {e}")
+        except FileNotFoundError:
+            print("Error: 'sing-box' command not found. Make sure it's installed and in your PATH.")
 
 def convert_yaml_to_mrs(yaml_file: str) -> None:
-    """Convert YAML file to MRS format."""
-    if 'geosite' in json_file:
+    if 'geosite' in yaml_file:
         output_file = yaml_file.replace('.yaml', '.mrs')
         try:
             subprocess.run(['mihomo', 'convert-ruleset', 'domain', 'yaml', yaml_file, output_file], check=True)
             print(f"Successfully converted {yaml_file} to {output_file}")
         except subprocess.CalledProcessError as e:
             print(f"Error converting {yaml_file} to MRS: {e}")
-        
+        except FileNotFoundError:
+            print("Error: 'mihomo' command not found. Make sure it's installed and in your PATH.")
+
 def process_urls(config: Dict[str, List[str]]) -> None:
-    """Process URLs and generate output files."""
     for output_base, urls in config.items():
         domains, domain_suffixes = extract_domains(urls)
         
@@ -141,14 +135,11 @@ def process_urls(config: Dict[str, List[str]]) -> None:
 
         print(f"Successfully generated files for {output_base}")
 
-        # Convert JSON to SRS
         convert_json_to_srs(f"{base_name}.json")
         
-        # Convert YAML to MRS
         convert_yaml_to_mrs(f"{base_name}.yaml")
 
 def main() -> None:
-    """Main function to run the domain extractor and formatter."""
     config = {
         "rule-set/geosite-cdn": [
             "https://raw.githubusercontent.com/SukkaW/Surge/refs/heads/master/Source/domainset/cdn.conf",
