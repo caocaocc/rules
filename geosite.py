@@ -98,47 +98,23 @@ def write_yaml(domains: List[str], domain_suffixes: List[str], filename: str) ->
         for suffix in domain_suffixes:
             f.write(f"  - '+.{suffix}'\n")
 
-def convert_json_to_srs(json_file: str) -> None:
+def convert_to_srs(json_file: str) -> None:
     if 'geosite' in json_file:
-        output_file = json_file.replace('.json', '.srs')
-        try:
-            subprocess.run(['sing-box', 'rule-set', 'compile', json_file, '-o', output_file], check=True)
-            print(f"Successfully converted {json_file} to {output_file}")
-        except subprocess.CalledProcessError as e:
-            print(f"Error converting {json_file} to SRS: {e}")
-        except FileNotFoundError:
-            print("Error: 'sing-box' command not found. Make sure it's installed and in your PATH.")
-
-def convert_yaml_to_mrs(yaml_file: str) -> None:
-    if 'geosite' in yaml_file:
-        output_file = yaml_file.replace('.yaml', '.mrs')
-        try:
-            subprocess.run(['mihomo', 'convert-ruleset', 'domain', 'yaml', yaml_file, output_file], check=True)
-            print(f"Successfully converted {yaml_file} to {output_file}")
-        except subprocess.CalledProcessError as e:
-            print(f"Error converting {yaml_file} to MRS: {e}")
-        except FileNotFoundError:
-            print("Error: 'mihomo' command not found. Make sure it's installed and in your PATH.")
-
-def convert_files(base_name: str) -> None:
-    json_file = f"{base_name}.json"
-    yaml_file = f"{base_name}.yaml"
-    
-    if 'geosite' in json_file:
-        srs_file = json_file.replace('.json', '.srs')
+        srs_file = json_file.rsplit('.', 1)[0] + '.srs'
         try:
             subprocess.run(['sing-box', 'rule-set', 'compile', json_file, '-o', srs_file], check=True)
-            print(f"Successfully converted {json_file} to {srs_file}")
+            print(f"Converted {json_file} to {srs_file}")
         except subprocess.CalledProcessError as e:
             print(f"Error converting {json_file} to SRS: {e}")
         except FileNotFoundError:
             print("Error: 'sing-box' command not found. Make sure it's installed and in your PATH.")
-    
+
+def convert_to_mrs(yaml_file: str) -> None:
     if 'geosite' in yaml_file:
-        mrs_file = yaml_file.replace('.yaml', '.mrs')
+        mrs_file = yaml_file.rsplit('.', 1)[0] + '.mrs'
         try:
             subprocess.run(['mihomo', 'convert-ruleset', 'domain', 'yaml', yaml_file, mrs_file], check=True)
-            print(f"Successfully converted {yaml_file} to {mrs_file}")
+            print(f"Converted {yaml_file} to {mrs_file}")
         except subprocess.CalledProcessError as e:
             print(f"Error converting {yaml_file} to MRS: {e}")
         except FileNotFoundError:
@@ -148,18 +124,22 @@ def process_urls(config: Dict[str, List[str]]) -> None:
     for output_base, urls in config.items():
         domains, domain_suffixes = extract_domains(urls)
         
+        if not domains and not domain_suffixes:
+            print(f"Warning: No valid domains found for {output_base}")
+            continue
+        
         directory = os.path.dirname(output_base)
         os.makedirs(directory, exist_ok=True)
         
-        base_name = output_base
-        write_json(domains, domain_suffixes, f"{base_name}.json")
-        write_list(domains, domain_suffixes, f"{base_name}.list")
-        write_txt(domains, domain_suffixes, f"{base_name}.txt")
-        write_yaml(domains, domain_suffixes, f"{base_name}.yaml")
+        write_json(domains, domain_suffixes, f"{output_base}.json")
+        write_list(domains, domain_suffixes, f"{output_base}.list")
+        write_txt(domains, domain_suffixes, f"{output_base}.txt")
+        write_yaml(domains, domain_suffixes, f"{output_base}.yaml")
 
         print(f"Successfully generated files for {output_base}")
 
-        convert_files(base_name)
+        convert_to_srs(f"{output_base}.json")
+        convert_to_mrs(f"{output_base}.yaml")
 
 def main() -> None:
     config = {
