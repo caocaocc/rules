@@ -29,8 +29,8 @@ jobs:
       run: |
         bash <(curl -fsSL "https://raw.githubusercontent.com/caocaocc/scripts/main/mihomo-install.sh")
         
-    - name: Run CDN Domain Processor
-      run: python geosite.py
+    - name: Generate rule-set
+      run: python generate.py
 
     - name: Deploy GitHub Pages
       if: success()
