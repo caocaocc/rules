@@ -24,52 +24,46 @@ def fetch_content(url: str, max_retries: int = 3) -> List[str]:
         time.sleep(2 ** attempt)
     return []
 
-def remove_comments(lines: List[str]) -> List[str]:
-    return [line.strip() for line in lines if line.strip() and not line.strip().startswith(('#', ';'))]
-
-def parse_ip_line(line: str) -> Tuple[Set[str], Set[str]]:
-    ipv4_cidrs = set()
-    ipv6_cidrs = set()
-    
-    # 移除所有空白字符
-    line = ''.join(line.split())
-    
-    # 尝试从行中提取 CIDR
-    try:
-        # 尝试作为 IPv4 CIDR 解析
-        network = ipaddress.IPv4Network(line, strict=False)
-        ipv4_cidrs.add(str(network))
-    except ipaddress.AddressValueError:
+def process_lines(lines: List[str]) -> List[str]:
+    ip_list = []
+    for line in lines:
+        line = line.split('#')[0].strip()
+        if not line:
+            continue
+        line = re.sub(r'^(IP-CIDR,|IP-CIDR6,)', '', line)
         try:
-            # 如果不是 IPv4，尝试作为 IPv6 CIDR 解析
-            network = ipaddress.IPv6Network(line, strict=False)
-            ipv6_cidrs.add(str(network))
-        except ipaddress.AddressValueError:
-            # 如果既不是 IPv4 也不是 IPv6，则忽略这行
-            pass
-    except ValueError:
-        # 如果格式完全不对，忽略这行
-        pass
+            ip_network = ipaddress.ip_network(line)
+            ip_list.append(str(ip_network))
+        except ValueError:
+            continue
+    return ip_list
 
-    return ipv4_cidrs, ipv6_cidrs
+def sort_ip_list(ip_list: List[str]) -> List[str]:
+    ipv4_list = []
+    ipv6_list = []
+    for ip in ip_list:
+        if ':' in ip:
+            ipv6_list.append(ip)
+        else:
+            ipv4_list.append(ip)
+    
+    sorted_ipv4 = sorted(ipv4_list, key=lambda x: ipaddress.IPv4Network(x))
+    sorted_ipv6 = sorted(ipv6_list, key=lambda x: ipaddress.IPv6Network(x))
+    
+    return sorted_ipv4 + sorted_ipv6
 
 def extract_ip_cidrs(urls: List[str]) -> Tuple[List[str], List[str]]:
-    all_ipv4_cidrs = set()
-    all_ipv6_cidrs = set()
+    all_ip_cidrs = []
     
     for url in urls:
         lines = fetch_content(url) if url.startswith('http') else url.splitlines()
-        for line in lines:
-            line = line.strip()
-            if line and not line.startswith(('#', ';')):
-                ipv4_cidrs, ipv6_cidrs = parse_ip_line(line)
-                all_ipv4_cidrs.update(ipv4_cidrs)
-                all_ipv6_cidrs.update(ipv6_cidrs)
+        all_ip_cidrs.extend(process_lines(lines))
     
-    return sort_ip_cidrs(list(all_ipv4_cidrs)), sort_ip_cidrs(list(all_ipv6_cidrs))
-
-def sort_ip_cidrs(cidrs: List[str]) -> List[str]:
-    return sorted(cidrs, key=lambda x: (ipaddress.ip_network(x).network_address, ipaddress.ip_network(x).prefixlen))
+    sorted_cidrs = sort_ip_list(all_ip_cidrs)
+    ipv4_cidrs = [cidr for cidr in sorted_cidrs if ':' not in cidr]
+    ipv6_cidrs = [cidr for cidr in sorted_cidrs if ':' in cidr]
+    
+    return ipv4_cidrs, ipv6_cidrs
 
 def write_json(ipv4_cidrs: List[str], ipv6_cidrs: List[str], filename: str) -> None:
     data = {
