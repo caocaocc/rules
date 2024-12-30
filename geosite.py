@@ -4,6 +4,8 @@ import re
 from typing import List, Set, Tuple, Dict
 from urllib.request import urlopen
 from urllib.error import URLError
+import subprocess
+import glob
 
 def fetch_content(url: str) -> List[str]:
     """Fetch content from a given URL."""
@@ -95,22 +97,6 @@ def write_yaml(domains: List[str], domain_suffixes: List[str], filename: str) ->
         for suffix in domain_suffixes:
             f.write(f"  - '+.{suffix}'\n")
 
-def convert_json_to_srs(json_file: str) -> None:
-    output_file = json_file.replace('.json', '.srs')
-    try:
-        subprocess.run(['sing-box', 'rule-set', 'compile', json_file, '-o', output_file], check=True)
-        print(f"Successfully converted {json_file} to {output_file}")
-    except subprocess.CalledProcessError as e:
-        print(f"Error converting {json_file} to SRS: {e}")
-
-def convert_yaml_to_mrs(yaml_file: str) -> None:
-    output_file = yaml_file.replace('.yaml', '.mrs')
-    try:
-        subprocess.run(['mihomo', 'convert-ruleset', 'domain', 'yaml', yaml_file, output_file], check=True)
-        print(f"Successfully converted {yaml_file} to {output_file}")
-    except subprocess.CalledProcessError as e:
-        print(f"Error converting {yaml_file} to MRS: {e}")
-        
 def process_urls(config: Dict[str, List[str]]) -> None:
     """Process URLs and generate output files."""
     for output_base, urls in config.items():
@@ -127,12 +113,26 @@ def process_urls(config: Dict[str, List[str]]) -> None:
 
         print(f"Successfully generated files for {output_base}")
 
-        # Convert JSON to SRS
-        convert_json_to_srs(json_file)
-        
-        # Convert YAML to MRS
-        convert_yaml_to_mrs(yaml_file)
+def convert_files():
+    """Convert JSON files to SRS and YAML files to MRS."""
+    # Convert all JSON files to SRS
+    for json_file in glob.glob('rule-set/**/*.json', recursive=True):
+        srs_file = json_file.rsplit('.', 1)[0] + '.srs'
+        try:
+            subprocess.run(['sing-box', 'rule-set', 'compile', json_file, '-o', srs_file], check=True)
+            print(f"Converted {json_file} to {srs_file}")
+        except subprocess.CalledProcessError as e:
+            print(f"Error converting {json_file} to SRS: {e}")
 
+    # Convert all YAML files to MRS
+    for yaml_file in glob.glob('rule-set/**/*.yaml', recursive=True):
+        mrs_file = yaml_file.rsplit('.', 1)[0] + '.mrs'
+        try:
+            subprocess.run(['mihomo', 'convert-ruleset', 'domain', 'yaml', yaml_file, mrs_file], check=True)
+            print(f"Converted {yaml_file} to {mrs_file}")
+        except subprocess.CalledProcessError as e:
+            print(f"Error converting {yaml_file} to MRS: {e}")
+            
 def main() -> None:
     """Main function to run the domain extractor and formatter."""
     config = {
@@ -143,6 +143,4 @@ def main() -> None:
     }
     
     process_urls(config)
-
-if __name__ == "__main__":
-    main()
+    convert_files()
