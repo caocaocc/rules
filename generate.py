@@ -1,8 +1,8 @@
 import json
 import os
+import re
 from urllib.request import urlopen
 from urllib.error import URLError
-from urllib.parse import urlparse
 
 def download_content(url):
     try:
@@ -16,22 +16,24 @@ def extract_domains(urls):
     domains = set()
     domain_suffixes = set()
     
+    domain_pattern = re.compile(r'^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$')
+    domain_suffix_pattern = re.compile(r'^(\.|(\+\.))')
+    domain_line_pattern = re.compile(r'^DOMAIN,(.+)$')
+    domain_suffix_line_pattern = re.compile(r'^DOMAIN-SUFFIX,(.+)$')
+
     for url in urls:
-        lines = download_content(url)
+        lines = download_content(url) if url.startswith('http') else url.splitlines()
         for line in lines:
             line = line.strip()
-            if line.startswith('DOMAIN,'):
-                domains.add(line.split(',')[1])
-            elif line.startswith('DOMAIN-SUFFIX,'):
-                domain_suffixes.add(line.split(',')[1])
-            elif line.startswith('.'):
-                domain_suffixes.add(line[1:])
-            else:
-                parsed = urlparse(line)
-                if parsed.netloc:
-                    domains.add(parsed.netloc)
-                elif parsed.path:
-                    domains.add(parsed.path)
+            
+            if domain_pattern.match(line):
+                domains.add(line)
+            elif domain_suffix_pattern.match(line):
+                domain_suffixes.add(line.lstrip('.+'))
+            elif domain_line_pattern.match(line):
+                domains.add(domain_line_pattern.match(line).group(1))
+            elif domain_suffix_line_pattern.match(line):
+                domain_suffixes.add(domain_suffix_line_pattern.match(line).group(1))
     
     return sorted(domains), sorted(domain_suffixes)
 
@@ -39,13 +41,9 @@ def process_urls(config):
     for output_base, urls in config.items():
         domains, domain_suffixes = extract_domains(urls)
         
-        # Create full path including any subdirectories
         directory = os.path.dirname(output_base)
-        
-        # Create subdirectories if they don't exist
         os.makedirs(directory, exist_ok=True)
         
-        # Generate files for each supported format
         base_name = output_base
         write_json(domains, domain_suffixes, f"{base_name}.json")
         write_list(domains, domain_suffixes, f"{base_name}.list")
@@ -88,7 +86,6 @@ def write_yaml(domains, domain_suffixes, filename):
             f.write(f"  - '+.{suffix}'\n")
 
 def main():
-    # Configuration: output base path as key, list of URLs as value
     config = {
         "rule-set/geosite-cdn": [
             "https://raw.githubusercontent.com/SukkaW/Surge/refs/heads/master/Source/domainset/cdn.conf",
