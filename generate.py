@@ -1,10 +1,12 @@
 import json
 import os
 import re
+from typing import List, Set, Tuple, Dict
 from urllib.request import urlopen
 from urllib.error import URLError
 
-def download_content(url):
+def fetch_content(url: str) -> List[str]:
+    """Fetch content from a given URL."""
     try:
         with urlopen(url) as response:
             return response.read().decode('utf-8').splitlines()
@@ -12,45 +14,50 @@ def download_content(url):
         print(f"Error downloading {url}: {e}")
         return []
 
-def extract_domains(urls):
+def parse_line(line: str) -> Tuple[Set[str], Set[str]]:
+    """Parse a single line and extract domain or domain suffix."""
     domains = set()
     domain_suffixes = set()
     
-    domain_pattern = re.compile(r'^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$')
-    domain_suffix_pattern = re.compile(r'^(\.|(\+\.))')
-    domain_line_pattern = re.compile(r'^DOMAIN,(.+)$')
-    domain_suffix_line_pattern = re.compile(r'^DOMAIN-SUFFIX,(.+)$')
-
-    for url in urls:
-        lines = download_content(url) if url.startswith('http') else url.splitlines()
-        for line in lines:
-            line = line.strip()
-            
-            if domain_pattern.match(line):
-                domains.add(line)
-            elif domain_suffix_pattern.match(line):
-                domain_suffixes.add(line.lstrip('.+'))
-            elif domain_line_pattern.match(line):
-                domains.add(domain_line_pattern.match(line).group(1))
-            elif domain_suffix_line_pattern.match(line):
-                domain_suffixes.add(domain_suffix_line_pattern.match(line).group(1))
+    patterns = {
+        'domain': re.compile(r'^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$'),
+        'domain_suffix': re.compile(r'^(\.|(\+\.))'),
+        'domain_line': re.compile(r'^DOMAIN,(.+)$'),
+        'domain_suffix_line': re.compile(r'^DOMAIN-SUFFIX,(.+)$'),
+        'server_line': re.compile(r'^server=/([^/]+)/'),
+    }
     
-    return sorted(domains), sorted(domain_suffixes)
+    line = line.strip()
+    
+    if patterns['domain'].match(line):
+        domains.add(line)
+    elif patterns['domain_suffix'].match(line):
+        domain_suffixes.add(line.lstrip('.+'))
+    elif patterns['domain_line'].match(line):
+        domains.add(patterns['domain_line'].match(line).group(1))
+    elif patterns['domain_suffix_line'].match(line):
+        domain_suffixes.add(patterns['domain_suffix_line'].match(line).group(1))
+    elif patterns['server_line'].match(line):
+        domains.add(patterns['server_line'].match(line).group(1))
+    
+    return domains, domain_suffixes
 
-def process_urls(config):
-    for output_base, urls in config.items():
-        domains, domain_suffixes = extract_domains(urls)
-        
-        directory = os.path.dirname(output_base)
-        os.makedirs(directory, exist_ok=True)
-        
-        base_name = output_base
-        write_json(domains, domain_suffixes, f"{base_name}.json")
-        write_list(domains, domain_suffixes, f"{base_name}.list")
-        write_txt(domains, domain_suffixes, f"{base_name}.txt")
-        write_yaml(domains, domain_suffixes, f"{base_name}.yaml")
+def extract_domains(urls: List[str]) -> Tuple[List[str], List[str]]:
+    """Extract domains and domain suffixes from given URLs or content."""
+    all_domains = set()
+    all_domain_suffixes = set()
+    
+    for url in urls:
+        lines = fetch_content(url) if url.startswith('http') else url.splitlines()
+        for line in lines:
+            domains, domain_suffixes = parse_line(line)
+            all_domains.update(domains)
+            all_domain_suffixes.update(domain_suffixes)
+    
+    return sorted(all_domains), sorted(all_domain_suffixes)
 
-def write_json(domains, domain_suffixes, filename):
+def write_json(domains: List[str], domain_suffixes: List[str], filename: str) -> None:
+    """Write domains and domain suffixes to a JSON file."""
     data = {
         "version": 1,
         "rules": [
@@ -63,21 +70,24 @@ def write_json(domains, domain_suffixes, filename):
     with open(filename, 'w') as f:
         json.dump(data, f, indent=2)
 
-def write_list(domains, domain_suffixes, filename):
+def write_list(domains: List[str], domain_suffixes: List[str], filename: str) -> None:
+    """Write domains and domain suffixes to a list file."""
     with open(filename, 'w') as f:
         for domain in domains:
             f.write(f"DOMAIN,{domain}\n")
         for suffix in domain_suffixes:
             f.write(f"DOMAIN-SUFFIX,{suffix}\n")
 
-def write_txt(domains, domain_suffixes, filename):
+def write_txt(domains: List[str], domain_suffixes: List[str], filename: str) -> None:
+    """Write domains and domain suffixes to a text file."""
     with open(filename, 'w') as f:
         for domain in domains:
             f.write(f"{domain}\n")
         for suffix in domain_suffixes:
             f.write(f"+.{suffix}\n")
 
-def write_yaml(domains, domain_suffixes, filename):
+def write_yaml(domains: List[str], domain_suffixes: List[str], filename: str) -> None:
+    """Write domains and domain suffixes to a YAML file."""
     with open(filename, 'w') as f:
         f.write("payload:\n")
         for domain in domains:
@@ -85,7 +95,22 @@ def write_yaml(domains, domain_suffixes, filename):
         for suffix in domain_suffixes:
             f.write(f"  - '+.{suffix}'\n")
 
-def main():
+def process_urls(config: Dict[str, List[str]]) -> None:
+    """Process URLs and generate output files."""
+    for output_base, urls in config.items():
+        domains, domain_suffixes = extract_domains(urls)
+        
+        directory = os.path.dirname(output_base)
+        os.makedirs(directory, exist_ok=True)
+        
+        base_name = output_base
+        write_json(domains, domain_suffixes, f"{base_name}.json")
+        write_list(domains, domain_suffixes, f"{base_name}.list")
+        write_txt(domains, domain_suffixes, f"{base_name}.txt")
+        write_yaml(domains, domain_suffixes, f"{base_name}.yaml")
+
+def main() -> None:
+    """Main function to run the domain extractor and formatter."""
     config = {
         "rule-set/geosite-cdn": [
             "https://raw.githubusercontent.com/SukkaW/Surge/refs/heads/master/Source/domainset/cdn.conf",
