@@ -272,8 +272,7 @@ def main():
     # Geoip 处理
     ip_urls = [
         # 在这里添加您的 IP CIDR URL 列表
-        "https://example.com/ip_url1",
-        "https://example.com/ip_url2",
+        "https://ruleset.skk.moe/List/ip/lan.conf",
     ]
 
     ip_cidrs = process_ip_urls(ip_urls)
