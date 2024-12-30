@@ -136,11 +136,40 @@ def process_urls(config: Dict[str, List[str]]) -> None:
         write_txt(domains, domain_suffixes, f"{output_base}.txt")
         write_yaml(domains, domain_suffixes, f"{output_base}.yaml")
 
-        print(f"Successfully generated files for {output_base}")
-
         convert_to_srs(f"{output_base}.json")
         convert_to_mrs(f"{output_base}.yaml")
+        
+        print(f"Successfully generated files for {output_base}")
 
+def download_geosite_files(base_url: str, base_names: List[str], output_dir: str, extensions: List[str] = ['.json', '.txt', '.yaml', '.list', '.srs', '.mrs']) -> None:
+    """
+    Download multiple geoip files from a given base URL and save them to the specified output directory.
+    
+    :param base_url: The base URL where the files are located
+    :param base_names: A list of base file names (without extensions)
+    :param output_dir: The directory where the downloaded files will be saved
+    :param extensions: A list of file extensions to download (default includes all common extensions)
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    
+    for base_name in base_names:
+        for ext in extensions:
+            file_name = f"{base_name}{ext}"
+            url = f"{base_url}/{file_name}"
+            output_path = os.path.join(output_dir, file_name)
+            
+            try:
+                content = fetch_content(url)
+                if content:
+                    with open(output_path, 'w') as file:
+                        file.write('\n'.join(content))
+                    print(f"Successfully downloaded: {file_name}")
+                else:
+                    print(f"Failed to download: {file_name}")
+            
+            except Exception as e:
+                print(f"Error downloading {file_name}: {e}")
+                
 def main() -> None:
     config = {
         "rule-set/geosite-cdn": [
@@ -150,6 +179,13 @@ def main() -> None:
     }
     
     process_urls(config)
+
+    # Add the new functionality
+    base_url = "https://raw.githubusercontent.com/caocaocc/geosite/rule-set"
+    base_names = ["geosite-private", "geosite-cn", "geosite-geolocation-!cn", "geosite-netflix", "geosite-openai", "geosite-paypal", "geosite-category-remote-control"]
+    output_dir = "rule-set"
+    
+    download_geosite_files(base_url, base_names, output_dir)
 
 if __name__ == "__main__":
     main()
