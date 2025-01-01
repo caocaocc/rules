@@ -97,7 +97,13 @@ def write_yaml(domains: List[str], domain_suffixes: List[str], filename: str) ->
             f.write(f"  - '{domain}'\n")
         for suffix in domain_suffixes:
             f.write(f"  - '+.{suffix}'\n")
-
+def write_snippet(domains: List[str], domain_suffixes: List[str], filename: str) -> None:
+    with open(filename, 'w') as f:
+        for domain in domains:
+            f.write(f"host, {domain}\n")
+        for suffix in domain_suffixes:
+            f.write(f"host-suffix, {suffix}\n")
+            
 def convert_to_srs(json_file: str) -> None:
     if 'geosite' in json_file:
         srs_file = json_file.rsplit('.', 1)[0] + '.srs'
@@ -135,6 +141,7 @@ def process_urls(config: Dict[str, List[str]]) -> None:
         write_list(domains, domain_suffixes, f"{output_base}.list")
         write_txt(domains, domain_suffixes, f"{output_base}.txt")
         write_yaml(domains, domain_suffixes, f"{output_base}.yaml")
+        write_snippet(domains, domain_suffixes, f"{output_base}.snippet")
 
         convert_to_srs(f"{output_base}.json")
         convert_to_mrs(f"{output_base}.yaml")
