@@ -148,7 +148,7 @@ def process_urls(config: Dict[str, List[str]]) -> None:
         
         print(f"Successfully generated files for {output_base}")
 
-def download_geosite_files(base_url: str, base_names: List[str], output_dir: str, extensions: List[str] = ['.json', '.txt', '.yaml', '.list', '.srs', '.mrs']) -> None:
+def download_geosite_files(base_url: str, base_names: List[str], output_dir: str, extensions: List[str] = ['.json', '.txt', '.yaml', '.list', '.snippet', '.srs', '.mrs']) -> None:
     """
     Download multiple geoip files from a given base URL using wget and save them to the specified output directory.
     
