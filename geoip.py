@@ -94,7 +94,13 @@ def write_yaml(ipv4_cidrs: List[str], ipv6_cidrs: List[str], filename: str) -> N
         f.write("payload:\n")
         for cidr in ipv4_cidrs + ipv6_cidrs:
             f.write(f"  - '{cidr}'\n")
-
+def write_list(ipv4_cidrs: List[str], ipv6_cidrs: List[str], filename: str) -> None:
+    with open(filename, 'w') as f:
+        for cidr in ipv4_cidrs:
+            f.write(f"ip-cidr, {cidr}\n")
+        for cidr in ipv6_cidrs:
+            f.write(f"ip6-cidr, {cidr}\n")
+            
 def convert_to_srs(json_file: str) -> None:
     if 'geoip' in json_file:
         srs_file = json_file.rsplit('.', 1)[0] + '.srs'
@@ -132,13 +138,14 @@ def process_urls(config: Dict[str, List[str]]) -> None:
         write_list(ipv4_cidrs, ipv6_cidrs, f"{output_base}.list")
         write_txt(ipv4_cidrs, ipv6_cidrs, f"{output_base}.txt")
         write_yaml(ipv4_cidrs, ipv6_cidrs, f"{output_base}.yaml")
+        write_snippet(ipv4_cidrs, ipv6_cidrs, f"{output_base}.snippet")
 
         convert_to_srs(f"{output_base}.json")
         convert_to_mrs(f"{output_base}.yaml")
         
         print(f"Successfully generated files for {output_base}")
 
-def download_geoip_files(base_url: str, base_names: List[str], output_dir: str, extensions: List[str] = ['.json', '.txt', '.yaml', '.list', '.srs', '.mrs']) -> None:
+def download_geoip_files(base_url: str, base_names: List[str], output_dir: str, extensions: List[str] = ['.json', '.txt', '.yaml', '.list', '.snippet', '.srs', '.mrs']) -> None:
     """
     Download multiple geoip files from a given base URL using wget and save them to the specified output directory.
     
