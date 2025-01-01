@@ -94,7 +94,7 @@ def write_yaml(ipv4_cidrs: List[str], ipv6_cidrs: List[str], filename: str) -> N
         f.write("payload:\n")
         for cidr in ipv4_cidrs + ipv6_cidrs:
             f.write(f"  - '{cidr}'\n")
-def write_list(ipv4_cidrs: List[str], ipv6_cidrs: List[str], filename: str) -> None:
+def write_snippet(ipv4_cidrs: List[str], ipv6_cidrs: List[str], filename: str) -> None:
     with open(filename, 'w') as f:
         for cidr in ipv4_cidrs:
             f.write(f"ip-cidr, {cidr}\n")
