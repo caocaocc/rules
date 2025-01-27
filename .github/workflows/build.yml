@@ -58,11 +58,34 @@ jobs:
             echo "跳过文件: $file"
           fi
         done
+    - name: Download icon
+      run: |
+        mkdir -p icon
+        cd icon
+        curl "Auto.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png"
+        curl "Available.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Available_1.png"
+        curl "Round_Robin.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Round_Robin.png"
+        curl "Global.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Global.png"
+        curl "China_Map.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/China_Map.png"
+        curl "Auto.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png"
+        curl "select.png" "https://fastly.jsdelivr.net/gh/shindgewongxj/WHATSINStash@master/icon/select.png"
+        curl "urltest.png" "https://fastly.jsdelivr.net/gh/shindgewongxj/WHATSINStash@master/icon/urltest.png"
+        curl "fallback.png" "https://fastly.jsdelivr.net/gh/shindgewongxj/WHATSINStash@master/icon/fallback.png"
+        curl "loadbalance.png" "https://fastly.jsdelivr.net/gh/shindgewongxj/WHATSINStash@master/icon/loadbalance.png"
+        
     - name: Deploy GitHub Pages
       if: success()
       uses: crazy-max/ghaction-github-pages@v3
       with:
         build_dir: rule-set
         target_branch: rule-set
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Deploy GitHub Pages
+      if: success()
+      uses: crazy-max/ghaction-github-pages@v3
+      with:
+        build_dir: icon
+        target_branch: icon
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
