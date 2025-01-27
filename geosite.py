@@ -100,9 +100,9 @@ def write_yaml(domains: List[str], domain_suffixes: List[str], filename: str) ->
 def write_snippet(domains: List[str], domain_suffixes: List[str], filename: str) -> None:
     with open(filename, 'w') as f:
         for domain in domains:
-            f.write(f"host, {domain}\n")
+            f.write(f"host, {domain}, proxy\n")
         for suffix in domain_suffixes:
-            f.write(f"host-suffix, {suffix}\n")
+            f.write(f"host-suffix, {suffix}, proxy\n")
             
 def convert_to_srs(json_file: str) -> None:
     if 'geosite' in json_file:
