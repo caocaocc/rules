@@ -97,9 +97,9 @@ def write_yaml(ipv4_cidrs: List[str], ipv6_cidrs: List[str], filename: str) -> N
 def write_snippet(ipv4_cidrs: List[str], ipv6_cidrs: List[str], filename: str) -> None:
     with open(filename, 'w') as f:
         for cidr in ipv4_cidrs:
-            f.write(f"ip-cidr, {cidr}\n")
+            f.write(f"ip-cidr, {cidr}, proxy\n")
         for cidr in ipv6_cidrs:
-            f.write(f"ip6-cidr, {cidr}\n")
+            f.write(f"ip6-cidr, {cidr}, proxy\n")
             
 def convert_to_srs(json_file: str) -> None:
     if 'geoip' in json_file:
