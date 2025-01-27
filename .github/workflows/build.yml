@@ -62,11 +62,18 @@ jobs:
       run: |
         mkdir -p icon
         cd icon
+        curl -o "Static.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Static.png"
+        curl -o "Star.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Star.png"
+        curl -o "Server.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Server.png"
         curl -o "Auto.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png"
         curl -o "Available.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Available_1.png"
         curl -o "Round_Robin.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Round_Robin.png"
         curl -o "Global.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Global.png"
         curl -o "China_Map.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/China_Map.png"
+        curl -o "Direct.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Direct.png"
+        curl -o "Proxy.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Proxy.png"
+        curl -o "Lock.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Lock.png"
+        curl -o "Unlock.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Unlock.png"
         curl -o "select.png" "https://fastly.jsdelivr.net/gh/shindgewongxj/WHATSINStash@master/icon/select.png"
         curl -o "urltest.png" "https://fastly.jsdelivr.net/gh/shindgewongxj/WHATSINStash@master/icon/urltest.png"
         curl -o "fallback.png" "https://fastly.jsdelivr.net/gh/shindgewongxj/WHATSINStash@master/icon/fallback.png"
