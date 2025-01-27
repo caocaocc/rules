@@ -69,6 +69,7 @@ jobs:
         curl -o "Available.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Available_1.png"
         curl -o "Round_Robin.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Round_Robin.png"
         curl -o "Global.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Global.png"
+        curl -o "China.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/China.png"
         curl -o "China_Map.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/China_Map.png"
         curl -o "Direct.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Direct.png"
         curl -o "Proxy.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Proxy.png"
