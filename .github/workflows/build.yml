@@ -34,6 +34,30 @@ jobs:
         python geosite.py
         python geoip.py
 
+    - name: Set .snipper files (Quantumult X)
+      run: |
+        for file in rule-set/*.snippet; do
+          # 如果不存在任何 .snippet 文件，继续下一次循环
+          [ -e "$file" ] || continue
+        
+          # 获取文件名（不带路径）
+          filename_with_ext=$(basename "$file")
+          # 获取去除 .snippet 后的“基本文件名”
+          filename_without_ext="${filename_with_ext%.snippet}"
+        
+          # 判断基本文件名是否以指定字符串结尾
+          if [[ "$filename_without_ext" == *-private || \
+                "$filename_without_ext" == *-cn      || \
+                "$filename_without_ext" == *@cn      ]]; then
+            
+            # 使用 sed 在原文件中进行替换
+            sed -i 's/, proxy/, direct/g' "$file"
+        
+            echo "已处理文件: $file"
+          else
+            echo "跳过文件: $file"
+          fi
+        done
     - name: Deploy GitHub Pages
       if: success()
       uses: crazy-max/ghaction-github-pages@v3
