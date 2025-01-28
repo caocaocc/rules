@@ -63,8 +63,8 @@ jobs:
         mkdir -p icon
         cd icon
         curl -o "paypal.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/PayPal.png"
-        curl -o "openai.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/OpenAI.png"
-        curl -o "netflix.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Netflix.png"
+        curl -o "openai.png" "https://fastly.jsdelivr.net/gh/shindgewongxj/WHATSINStash@master/icon/openai.png"
+        curl -o "netflix.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Netflix_Letter.png"
         curl -o "static.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Static.png"
         curl -o "star.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Star.png"
         curl -o "server.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Server.png"
