@@ -62,6 +62,8 @@ jobs:
       run: |
         mkdir -p icon
         cd icon
+        
+        curl -o "bilibili.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/bilibili.png"
         curl -o "paypal.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/PayPal.png"
         curl -o "openai.png" "https://fastly.jsdelivr.net/gh/shindgewongxj/WHATSINStash@master/icon/openai.png"
         curl -o "netflix.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Netflix.png"
