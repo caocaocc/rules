@@ -187,7 +187,7 @@ def main() -> None:
 
     # Add the new functionality
     base_url = "https://raw.githubusercontent.com/caocaocc/geosite/rule-set"
-    base_names = ["geosite-private", "geosite-cn", "geosite-geolocation-!cn", "geosite-netflix", "geosite-openai", "geosite-paypal", "geosite-category-remote-control"]
+    base_names = ["geosite-private", "geosite-cn", "geosite-bilibili", "geosite-geolocation-!cn", "geosite-netflix", "geosite-openai", "geosite-paypal"]
     output_dir = "rule-set"
     
     download_geosite_files(base_url, base_names, output_dir)
