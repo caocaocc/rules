@@ -73,6 +73,7 @@ jobs:
         curl -o "auto.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png"
         curl -o "available.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Available_1.png"
         curl -o "roundrobin.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Round_Robin.png"
+        curl -o "global.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Global.png"
         curl -o "www.png" "https://raw.githubusercontent.com/caocaocc/rules/main/www.png"
         curl -o "chinaflag.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/China.png"
         curl -o "china.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/China_Map.png"
