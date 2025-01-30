@@ -62,6 +62,7 @@ jobs:
       run: |
         mkdir -p icon
         cd icon
+        curl -o "tiktok.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Tiktok.png"
         curl -o "bilibili.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/bilibili_2.png"
         curl -o "paypal.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/PayPal.png"
         curl -o "openai.png" "https://fastly.jsdelivr.net/gh/shindgewongxj/WHATSINStash@master/icon/openai.png"
@@ -70,7 +71,7 @@ jobs:
         curl -o "star.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Star.png"
         curl -o "server.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Server.png"
         curl -o "auto.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png"
-        curl -o "available.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Available_1.png"
+        curl -o "available.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Available.png"
         curl -o "roundrobin.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Round_Robin_1.png"
         curl -o "global.png" "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Global.png"
         curl -o "www.png" "https://raw.githubusercontent.com/caocaocc/rules/main/www.png"
