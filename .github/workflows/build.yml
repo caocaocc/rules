@@ -62,6 +62,14 @@ jobs:
       run: |
         mkdir -p icon
         cd icon
+        
+        curl -o "vpn.png" "https://raw.githubusercontent.com/Orz-3/mini/master/Color/Vpn.png"
+        curl -o "hongkong.png" "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Hong_Kong.png"
+        curl -o "taiwan.png" "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Taiwan.png"
+        curl -o "japan.png" "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Japan.png"
+        curl -o "unitedstates.png" "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_States.png"
+        curl -o "unitedkingdom.png" "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_Kingdom.png"
+        curl -o "unitednations.png" "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_Nations.png"
         curl -o "tiktok.png" "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/TikTok.png"
         curl -o "bilibili.png" "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/bilibili_2.png"
         curl -o "paypal.png" "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/PayPal.png"
@@ -70,7 +78,7 @@ jobs:
         curl -o "star.png" "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Star.png"
         curl -o "server.png" "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Server.png"
         curl -o "auto.png" "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Auto.png"
-        curl -o "available.png" "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Available.png"
+        curl -o "available.png" "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Available_1.png"
         curl -o "roundrobin.png" "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Round_Robin_1.png"
         curl -o "global.png" "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Global.png"
         curl -o "chinaflag.png" "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/China.png"
