@@ -75,7 +75,7 @@ jobs:
         curl -o "unitedkingdom.png" "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_Kingdom.png"
         curl -o "unitednations.png" "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_Nations.png"
         curl -o "tiktok.png" "https://raw.githubusercontent.com/Orz-3/mini/master/Color/TikTok.png"
-        curl -o "bilibili.png" "https://raw.githubusercontent.com/Orz-3/mini/master/Color/Bili.png"
+        curl -o "bilibili.png" "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/bilibili_2.png"
         curl -o "paypal.png" "https://raw.githubusercontent.com/Orz-3/mini/master/Color/Paypal.png"
         curl -o "netflix.png" "https://raw.githubusercontent.com/Orz-3/mini/master/Color/Netflix.png"
         curl -o "static.png" "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Static.png"
