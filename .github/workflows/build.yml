@@ -63,12 +63,10 @@ jobs:
         mkdir -p icon
         cd icon
 
-        curl -o "tiktok.svg" "https://www.svgrepo.com/download/354170/paypal.svg"
         curl -o "paypal.svg" "https://www.svgrepo.com/download/354170/paypal.svg"
         curl -o "netflix.svg" "https://www.svgrepo.com/download/303341/netflix-1-logo.svg"
-        curl -o "openai.svg" "https://www.svgrepo.com/download/306500/openai.svg"
-        curl -o "tiktok.svg" "https://www.svgrepo.com/download/452114/tiktok.svg"
-        curl -o "tiktok.svg" "https://www.svgrepo.com/download/452114/tiktok.svg"
+        curl -o "chatgpt.svg" "https://www.clashverge.dev/assets/icons/chatgpt.svg"
+        curl -o "tiktok.svg" "https://www.clashverge.dev/assets/icons/tiktok.svg"
         curl -o "vpn.png" "https://raw.githubusercontent.com/Orz-3/mini/master/Color/Vpn.png"
         curl -o "hongkong.png" "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Hong_Kong.png"
         curl -o "taiwan.png" "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Taiwan.png"
