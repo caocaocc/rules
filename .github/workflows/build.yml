@@ -58,6 +58,14 @@ jobs:
             echo "跳过文件: $file"
           fi
         done
+
+    - name: Checkout caocaocc/rule-set
+      uses: actions/checkout@v4
+      with:
+        repository: caocaocc/rule-set
+        ref: release
+        path: rule-set
+          
     - name: Download icon
       run: |
         mkdir -p icon
