@@ -24,7 +24,7 @@
     {"type":"mixed","tag":"mixed","listen":"127.0.0.1","listen_port":6789,"reuse_addr":true,"set_system_proxy":false}
   ],
   "outbounds":[
-    {"type":"direct","tag":"direct","domain_resolver":"dns_direct"},
+    {"type":"direct","tag":"direct","domain_resolver":"system"},
     {"type":"selector","tag":"ExitGateway","outbounds":["auto"],"default":"auto","interrupt_exist_connections":true},
     {"type":"urltest","tag":"auto","outbounds":[],"url":"http://www.gstatic.com/generate_204","interval":"10m0s","tolerance":50,"idle_timeout":"30m0s"},
     {"type":"selector","tag":"AI","outbounds":["ExitGateway"],"default":"ExitGateway","interrupt_exist_connections":true},
@@ -40,8 +40,8 @@
       {"rule_set":"reject_extra_domainset","action":"reject"},
       {"rule_set":"reject_non_ip","action":"reject"},
       {"rule_set":"sogouinput","action":"reject"},
-      {"domain": ["direct-tag.oneoh.cloud"],"domain_suffix": [],"ip_cidr": [],"outbound": "direct"},
-      {"domain": ["proxy-tag.oneoh.cloud"],"domain_suffix": [],"ip_cidr": [],"outbound": "ExitGateway"},
+      {"domain":["direct-tag.oneoh.cloud"],"domain_suffix":[],"ip_cidr":[],"outbound":"direct"},
+      {"domain":["proxy-tag.oneoh.cloud"],"domain_suffix":[],"ip_cidr":[],"outbound":"ExitGateway"},
       {"rule_set":"speedtest","outbound":"direct"},
       {"rule_set":"cdn_domainset","outbound":"ExitGateway"},
       {"rule_set":"cdn_non_ip","outbound":"ExitGateway"},
