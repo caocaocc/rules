@@ -23,7 +23,7 @@
   "inbounds":[
     {"type":"direct","tag":"dns-in","listen":"::","listen_port":53,"network":"udp"},
     {"type":"tun","tag":"tun-in","address":["172.19.0.1/30","fdfe:dcba:9876::1/126"],"auto_route":true,"strict_route":true,"route_exclude_address_set":"lan_ip","stack":"gvisor","platform":{"http_proxy":{"enabled":true,"server":"127.0.0.1","server_port":6789}}},
-    {"type":"mixed","tag":"mixed-in","listen":"127.0.0.1","listen_port":6789,"reuse_addr":true,"set_system_proxy": true}
+    {"type":"mixed","tag":"mixed-in","listen":"127.0.0.1","listen_port":6789,"reuse_addr":true,"set_system_proxy":false}
   ],
   "outbounds":[
     {"type":"direct","tag":"direct","domain_resolver":"dns_direct"},
